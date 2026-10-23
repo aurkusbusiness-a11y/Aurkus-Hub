@@ -1,0 +1,2826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATS CV Checker</title>
+<style>
+  :root{
+    --bg:#f5f6f8;
+    --paper:#ffffff;
+    --paper-2:#fafbfc;
+    --paper-3:#f1f3f6;
+    --ink:#0f1a2b;
+    --ink-soft:#4a5462;
+    --faint:#8b95a3;
+    --line:#e2e6ec;
+    --line-hi:#ccd2db;
+    --navy:#1e3a5f;
+    --navy-2:#2d5a8c;
+    --navy-soft:#e8eef6;
+    --green:#059669;
+    --green-soft:#e6f7f0;
+    --amber:#b45309;
+    --amber-soft:#fef5e7;
+    --red:#b91c1c;
+    --red-soft:#fbeaea;
+    --radius:13px;
+    --shadow:0 1px 2px rgba(15,26,43,.04), 0 14px 30px -26px rgba(15,26,43,.5);
+    --shadow-lg:0 30px 60px -40px rgba(15,26,43,.55);
+    --ui:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    font-family:var(--ui); font-size:14px; line-height:1.55; color:var(--ink);
+    background-color:var(--bg);
+    background-image:
+      radial-gradient(circle at 4% -4%, #e8eef6 0%, transparent 40%),
+      radial-gradient(circle at 96% 2%, #e6f7f0 0%, transparent 38%);
+    background-attachment:fixed; min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{ max-width:1200px; margin:0 auto; padding:22px 20px 80px; }
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:16px; flex-wrap:wrap; margin-bottom:18px;
+  }
+  .brand{ display:flex; align-items:center; gap:14px; min-width:0; }
+  .logo{
+    width:46px; height:46px; border-radius:12px; flex:none;
+    background:linear-gradient(140deg,var(--navy),var(--navy-2));
+    display:grid; place-items:center; font-size:22px; color:#fff;
+    box-shadow:0 12px 26px -14px rgba(30,58,95,.8);
+  }
+  .brand h1{ font-size:19px; margin:0; letter-spacing:-.02em; font-weight:800; }
+  .brand p{
+    margin:2px 0 0; font-size:10.5px; color:var(--faint);
+    letter-spacing:.14em; text-transform:uppercase; font-weight:700;
+  }
+  .top-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+
+  .btn{
+    padding:9px 15px; border-radius:9px; border:1px solid transparent;
+    cursor:pointer; font-weight:650; font-size:13px; font-family:inherit;
+    background:var(--ink); color:#fff;
+    transition:background .15s ease, transform .08s ease, filter .15s ease;
+    display:inline-flex; align-items:center; gap:7px; white-space:nowrap;
+  }
+  .btn:hover{ background:#000; }
+  .btn:active{ transform:translateY(1px); }
+  .btn.primary{
+    background:linear-gradient(135deg,var(--navy),var(--navy-2));
+    color:#fff;
+  }
+  .btn.primary:hover{ filter:brightness(1.1); }
+  .btn.ghost{
+    background:transparent; color:var(--ink-soft); border-color:var(--line-hi);
+  }
+  .btn.ghost:hover{ background:var(--paper-2); color:var(--ink); }
+  .btn.small{ padding:7px 12px; font-size:12.5px; }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+  .intro{
+    background:linear-gradient(155deg,#0f1a2b,#1e3a5f 60%,#2d5a8c);
+    border-radius:16px; padding:26px 30px; margin-bottom:20px;
+    color:#fff; box-shadow:0 30px 60px -40px rgba(15,26,43,.6);
+    position:relative; overflow:hidden;
+  }
+  .intro::before{
+    content:''; position:absolute; top:-40%; right:-10%;
+    width:400px; height:400px; border-radius:50%;
+    background:radial-gradient(circle, rgba(45,90,140,.35), transparent 65%);
+    pointer-events:none;
+  }
+  .intro-inner{ position:relative; z-index:1; max-width:760px; }
+  .intro .eyebrow{
+    display:inline-block; font-size:10.5px; font-weight:800;
+    letter-spacing:.22em; text-transform:uppercase;
+    color:#93c5fd; margin-bottom:12px;
+  }
+  .intro h2{
+    font-family:var(--serif); font-size:26px; line-height:1.2;
+    margin:0 0 12px; letter-spacing:-.015em; font-weight:600;
+  }
+  .intro p{
+    margin:0 0 10px; font-size:14.5px; color:rgba(255,255,255,.82);
+    line-height:1.7;
+  }
+  .intro p:last-child{ margin-bottom:0; }
+
+  .inputs{
+    display:grid; grid-template-columns:1.4fr 1fr; gap:16px;
+    margin-bottom:16px;
+  }
+  @media (max-width:900px){ .inputs{ grid-template-columns:1fr; } }
+
+  .panel{
+    background:var(--paper); border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:18px 20px;
+    display:flex; flex-direction:column;
+  }
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px; flex-wrap:wrap; margin-bottom:12px;
+  }
+  .panel-head h3{
+    font-size:14px; font-weight:800; margin:0;
+    letter-spacing:-.01em; display:flex; align-items:center; gap:8px;
+  }
+  .panel-head h3 .dot{
+    width:8px; height:8px; border-radius:50%; background:var(--navy);
+  }
+  .panel-head .hint{
+    font-size:11.5px; color:var(--faint); font-weight:650;
+  }
+
+  .drop{
+    border:2px dashed var(--line-hi); border-radius:11px;
+    padding:18px; text-align:center;
+    background:var(--paper-2); cursor:pointer;
+    transition:.15s; margin-bottom:10px;
+    position:relative;
+  }
+  .drop:hover,
+  .drop.over{
+    border-color:var(--navy);
+    background:var(--navy-soft);
+  }
+  .drop.loading{
+    border-color:var(--navy);
+    background:var(--navy-soft);
+    cursor:wait;
+  }
+  .drop .big{ font-size:28px; display:block; margin-bottom:8px; opacity:.7; }
+  .drop p{ margin:0 0 4px; font-size:13px; color:var(--ink-soft); font-weight:650; }
+  .drop small{ font-size:11.5px; color:var(--faint); display:block; }
+  .drop .formats{
+    display:inline-flex; gap:5px; margin-top:8px; flex-wrap:wrap; justify-content:center;
+  }
+  .drop .fmt{
+    font-size:10.5px; font-weight:800; letter-spacing:.05em;
+    padding:3px 8px; border-radius:6px;
+    background:#fff; color:var(--navy); border:1px solid var(--line);
+  }
+  .drop .fmt.legacy{ color:var(--amber); border-color:#f0dcae; background:var(--amber-soft); }
+
+  .file-chip{
+    display:flex; align-items:center; gap:10px;
+    padding:10px 13px; margin-bottom:10px;
+    background:var(--green-soft);
+    border:1px solid #b8e2cd;
+    border-radius:10px;
+    font-size:12.5px;
+    animation:fadein .25s ease;
+  }
+  .file-chip.warn{
+    background:var(--amber-soft);
+    border-color:#f0dcae;
+  }
+  .file-chip-icon{ font-size:16px; flex:none; }
+  .file-chip-name{
+    font-weight:750; color:var(--green);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .file-chip.warn .file-chip-name{ color:var(--amber); }
+  .file-chip-meta{
+    color:var(--ink-soft); font-weight:600;
+    white-space:nowrap; flex:none;
+  }
+  .file-chip-close{
+    margin-left:auto; border:0; background:transparent;
+    color:var(--faint); cursor:pointer; font-size:16px; line-height:1;
+    padding:3px 8px; border-radius:6px;
+    transition:.15s;
+  }
+  .file-chip-close:hover{ background:rgba(0,0,0,.06); color:var(--ink); }
+
+  textarea{
+    width:100%; padding:12px 14px;
+    border:1px solid var(--line-hi); border-radius:10px;
+    background:var(--paper-2); color:var(--ink);
+    font-family:var(--mono); font-size:12.5px; line-height:1.6;
+    outline:none; resize:vertical;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  textarea:focus{
+    border-color:var(--navy);
+    box-shadow:0 0 0 3px rgba(30,58,95,.12);
+  }
+  #cvInput{ min-height:420px; }
+  #jdInput{ min-height:180px; }
+
+  .panel-actions{
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    margin-top:12px;
+  }
+  .counter{
+    flex:1; font-size:11.5px; color:var(--faint); font-weight:650;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .analyze-bar{
+    background:var(--paper); border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:16px 20px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:14px; flex-wrap:wrap; margin-bottom:20px;
+  }
+  .analyze-bar .msg{
+    font-size:13px; color:var(--ink-soft); font-weight:600;
+  }
+  .analyze-bar .msg b{ color:var(--ink); }
+
+  #results{ display:none; }
+  #results.show{ display:block; animation:fadein .3s ease; }
+  @keyframes fadein{
+    from{ opacity:0; transform:translateY(8px); }
+    to{ opacity:1; transform:none; }
+  }
+
+  .score-hero{
+    background:var(--paper); border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:26px 30px; margin-bottom:16px;
+    display:grid; grid-template-columns:auto 1fr;
+    gap:28px; align-items:center;
+  }
+  @media (max-width:680px){
+    .score-hero{ grid-template-columns:1fr; text-align:center; }
+  }
+
+  .score-ring{
+    position:relative; width:180px; height:180px; flex:none;
+    display:grid; place-items:center;
+  }
+  .score-ring svg{
+    position:absolute; inset:0; width:100%; height:100%;
+    transform:rotate(-90deg);
+  }
+  .score-ring .track{ fill:none; stroke:var(--paper-3); stroke-width:12; }
+  .score-ring .progress{
+    fill:none; stroke-width:12; stroke-linecap:round;
+    transition:stroke-dashoffset .8s cubic-bezier(.2,.8,.3,1);
+  }
+  .score-inner{
+    position:relative; text-align:center;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .score-inner .num{
+    font-size:52px; font-weight:800; line-height:1;
+    letter-spacing:-.04em; font-variant-numeric:tabular-nums;
+    color:var(--ink);
+  }
+  .score-inner .out-of{
+    font-size:12px; color:var(--faint); font-weight:700;
+    letter-spacing:.08em; text-transform:uppercase;
+    margin-top:4px;
+  }
+  .score-inner .grade{
+    margin-top:8px;
+    font-size:11px; font-weight:800; letter-spacing:.12em;
+    text-transform:uppercase;
+    padding:3px 10px; border-radius:999px;
+  }
+  .score-inner .grade.pass{ background:var(--green-soft); color:var(--green); }
+  .score-inner .grade.warn{ background:var(--amber-soft); color:var(--amber); }
+  .score-inner .grade.fail{ background:var(--red-soft); color:var(--red); }
+
+  .score-text h2{
+    font-family:var(--serif); font-size:24px; margin:0 0 8px;
+    letter-spacing:-.015em; font-weight:600;
+  }
+  .score-text p{
+    margin:0 0 10px; font-size:14px; color:var(--ink-soft);
+    line-height:1.7; max-width:560px;
+  }
+  .score-text p:last-child{ margin-bottom:0; }
+
+  .action-plan{
+    background:linear-gradient(155deg,#fef7f0,#fdf2ea);
+    border:1px solid #f0d9c0;
+    border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:22px 26px; margin-bottom:20px;
+  }
+  .action-plan-head{
+    display:flex; align-items:center; gap:12px; margin-bottom:14px;
+  }
+  .action-plan-head .icon{
+    width:38px; height:38px; border-radius:11px; flex:none;
+    background:linear-gradient(140deg,#ea580c,#c2410c);
+    display:grid; place-items:center; color:#fff; font-size:19px;
+    box-shadow:0 8px 18px -10px rgba(234,88,12,.7);
+  }
+  .action-plan-head h2{
+    font-family:var(--serif); font-size:20px; margin:0;
+    letter-spacing:-.015em; font-weight:600; color:#7c2d12;
+  }
+  .action-plan-head p{
+    margin:2px 0 0; font-size:12.5px; color:#9a3412; font-weight:600;
+  }
+  .action-list{
+    list-style:none; margin:0; padding:0;
+    counter-reset:step;
+  }
+  .action-item{
+    display:flex; gap:14px; align-items:flex-start;
+    padding:14px 16px; margin-bottom:8px;
+    background:#fff; border-radius:11px;
+    border-left:4px solid #ea580c;
+    counter-increment:step;
+  }
+  .action-item:last-child{ margin-bottom:0; }
+  .action-item::before{
+    content:counter(step);
+    width:26px; height:26px; border-radius:50%; flex:none;
+    background:#ea580c; color:#fff;
+    display:grid; place-items:center;
+    font-weight:800; font-size:13px;
+    font-variant-numeric:tabular-nums;
+  }
+  .action-item .body{ flex:1; min-width:0; }
+  .action-item .title{
+    font-size:14.5px; font-weight:750; color:var(--ink);
+    margin:0 0 3px; letter-spacing:-.005em;
+  }
+  .action-item .what{
+    font-size:13px; color:var(--ink-soft); line-height:1.6;
+    margin:0 0 6px;
+  }
+  .action-item .gain{
+    display:inline-block; font-size:11.5px; font-weight:800;
+    padding:3px 9px; border-radius:999px;
+    background:var(--green-soft); color:var(--green);
+    letter-spacing:.02em;
+  }
+
+  .cats{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    gap:12px; margin-bottom:24px;
+  }
+  .cat{
+    background:var(--paper); border:1px solid var(--line);
+    border-radius:12px; box-shadow:var(--shadow);
+    padding:14px 16px;
+    border-left:3px solid var(--c,var(--navy));
+  }
+  .cat .top{
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:10px; margin-bottom:8px;
+  }
+  .cat .name{ font-size:12.5px; font-weight:750; color:var(--ink); }
+  .cat .num{
+    font-family:var(--mono); font-size:13px; font-weight:800;
+    color:var(--c,var(--navy));
+    font-variant-numeric:tabular-nums;
+  }
+  .cat .bar{
+    height:6px; border-radius:999px; background:var(--paper-3);
+    overflow:hidden; margin-bottom:8px;
+  }
+  .cat .bar > i{
+    display:block; height:100%; border-radius:999px;
+    background:var(--c,var(--navy));
+    transition:width .6s cubic-bezier(.2,.8,.3,1);
+  }
+  .cat .potential{
+    font-size:11px; color:var(--faint); font-weight:650;
+    line-height:1.4;
+  }
+  .cat .potential b{ color:var(--c,var(--navy)); }
+
+  .findings-head{
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:14px; flex-wrap:wrap; margin:24px 0 14px;
+  }
+  .findings-head h2{
+    font-family:var(--serif); font-size:22px; margin:0;
+    letter-spacing:-.015em; font-weight:600;
+  }
+  .findings-head p{
+    margin:0; font-size:13px; color:var(--faint); font-weight:600;
+  }
+
+  .finding{
+    background:var(--paper); border:1px solid var(--line);
+    border-radius:12px; box-shadow:var(--shadow);
+    padding:0; margin-bottom:12px;
+    overflow:hidden;
+    border-left:4px solid var(--c, var(--navy));
+  }
+  .finding-head{
+    padding:15px 20px;
+    display:flex; gap:14px; align-items:flex-start;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .finding-head:hover{ background:var(--paper-2); }
+  .finding .mark{
+    width:26px; height:26px; border-radius:50%; flex:none;
+    display:grid; place-items:center;
+    font-size:13px; font-weight:800; color:#fff;
+    background:var(--c, var(--navy));
+    margin-top:1px;
+  }
+  .finding .head-body{ flex:1; min-width:0; }
+  .finding .title-row{
+    display:flex; align-items:center; gap:9px; flex-wrap:wrap;
+    margin-bottom:3px;
+  }
+  .finding .title{
+    font-size:14.5px; font-weight:750; color:var(--ink);
+    margin:0; letter-spacing:-.005em;
+  }
+  .finding .badge{
+    font-size:10px; font-weight:800;
+    letter-spacing:.08em; text-transform:uppercase;
+    padding:2px 8px; border-radius:999px;
+  }
+  .finding .badge.fix{ background:#fee2e2; color:#b91c1c; }
+  .finding .badge.recommend{ background:#fef3c7; color:#b45309; }
+  .finding .badge.optional{ background:#e0e7ff; color:#4338ca; }
+  .finding .badge.pass{ background:var(--green-soft); color:var(--green); }
+
+  .finding .summary{
+    font-size:13px; color:var(--ink-soft); line-height:1.6;
+    margin:0;
+  }
+  .finding .caret{
+    color:var(--faint); font-size:12px; flex:none;
+    transition:transform .2s ease;
+    padding-top:5px;
+  }
+  .finding.open .caret{ transform:rotate(180deg); }
+
+  .finding-body{
+    display:none;
+    padding:18px 20px 20px 60px;
+    border-top:1px solid var(--line);
+  }
+  .finding.open .finding-body{ display:block; }
+
+  .fb-section{ margin-bottom:16px; }
+  .fb-section:last-child{ margin-bottom:0; }
+  .fb-section h4{
+    font-size:10.5px; font-weight:800; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--faint);
+    margin:0 0 8px; display:flex; align-items:center; gap:8px;
+  }
+  .fb-section h4::after{
+    content:''; flex:1; height:1px; background:var(--line);
+  }
+
+  .evidence{
+    background:#f8fafc;
+    border-left:3px solid var(--line-hi);
+    border-radius:0 8px 8px 0;
+    padding:11px 14px;
+    font-family:var(--mono); font-size:12.5px; line-height:1.7;
+    color:var(--ink);
+    overflow-wrap:break-word;
+  }
+  .evidence .line{
+    display:block; margin-bottom:4px;
+    padding-left:14px; position:relative;
+  }
+  .evidence .line:last-child{ margin-bottom:0; }
+  .evidence .line::before{
+    content:'›'; position:absolute; left:0;
+    color:var(--c, var(--navy)); font-weight:800;
+  }
+
+  .how-steps{
+    list-style:none; margin:0; padding:0;
+    counter-reset:how;
+  }
+  .how-steps li{
+    counter-increment:how;
+    padding:9px 0 9px 36px;
+    position:relative;
+    font-size:13.5px; line-height:1.65; color:var(--ink-soft);
+    border-bottom:1px solid var(--line);
+  }
+  .how-steps li:last-child{ border-bottom:0; }
+  .how-steps li::before{
+    content:counter(how);
+    position:absolute; left:0; top:9px;
+    width:22px; height:22px; border-radius:50%;
+    background:var(--c, var(--navy)); color:#fff;
+    display:grid; place-items:center;
+    font-size:11.5px; font-weight:800;
+    font-variant-numeric:tabular-nums;
+  }
+  .how-steps li b{ color:var(--ink); font-weight:750; }
+
+  .ba-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:12px;
+  }
+  @media (max-width:640px){ .ba-grid{ grid-template-columns:1fr; } }
+  .ba-box{
+    border-radius:9px; padding:11px 14px;
+    font-size:13px; line-height:1.55;
+  }
+  .ba-box.before{ background:#fdf3f3; border-left:3px solid #dc2626; }
+  .ba-box.after{ background:#ecfdf5; border-left:3px solid #059669; }
+  .ba-box .ba-label{
+    font-size:10px; font-weight:800; letter-spacing:.12em;
+    text-transform:uppercase; margin-bottom:5px; display:block;
+  }
+  .ba-box.before .ba-label{ color:#b91c1c; }
+  .ba-box.after .ba-label{ color:#059669; }
+  .ba-box p{ margin:0; color:var(--ink); white-space:pre-wrap; }
+
+  .impact{
+    background:linear-gradient(135deg,#eff6ff,#f5f3ff);
+    border:1px solid #dbeafe;
+    border-radius:9px; padding:11px 14px;
+    font-size:13px; color:var(--ink-soft); line-height:1.6;
+  }
+  .impact strong{ color:#1e40af; font-weight:800; }
+
+  .kw-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:14px;
+    margin-top:12px;
+  }
+  @media (max-width:720px){ .kw-grid{ grid-template-columns:1fr; } }
+  .kw-box{
+    background:var(--paper); border:1px solid var(--line);
+    border-radius:12px; box-shadow:var(--shadow);
+    padding:16px 18px;
+  }
+  .kw-box h4{
+    font-size:11px; font-weight:800; letter-spacing:.12em;
+    text-transform:uppercase; margin:0 0 10px;
+  }
+  .kw-box.matched h4{ color:var(--green); }
+  .kw-box.missing h4{ color:var(--red); }
+  .kw-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .kw-chip{
+    font-size:11.5px; font-weight:650;
+    padding:4px 10px; border-radius:999px;
+    background:var(--paper-2); color:var(--ink-soft);
+    border:1px solid var(--line);
+    font-family:var(--mono);
+  }
+  .kw-chip.matched{
+    background:var(--green-soft); color:var(--green);
+    border-color:#b8e2cd;
+  }
+  .kw-chip.missing{
+    background:var(--red-soft); color:var(--red);
+    border-color:#f0c5c5;
+  }
+
+  .finding.pass{ --c:var(--green); }
+  .finding.warn{ --c:var(--amber); }
+  .finding.fail{ --c:var(--red); }
+  .finding.info{ --c:var(--navy); }
+
+  .placeholder{
+    background:var(--paper); border:1px dashed var(--line-hi);
+    border-radius:var(--radius); padding:50px 20px;
+    text-align:center; color:var(--faint); font-size:13.5px;
+  }
+  .placeholder .big{ font-size:38px; display:block; margin-bottom:12px; opacity:.5; }
+
+  .toast{
+    position:fixed; bottom:26px; left:50%; transform:translate(-50%,22px);
+    background:var(--ink); color:#fff;
+    padding:11px 20px; border-radius:10px;
+    font-size:13px; font-weight:650;
+    box-shadow:0 20px 40px -18px rgba(0,0,0,.5);
+    opacity:0; pointer-events:none;
+    transition:.28s cubic-bezier(.2,.8,.3,1); z-index:250;
+    white-space:nowrap;
+    max-width:90vw;
+    text-overflow:ellipsis;
+    overflow:hidden;
+  }
+  .toast.on{ opacity:1; transform:translate(-50%,0); }
+
+  @media print{
+    @page{ size: A4; margin: 14mm; }
+    body{ background:#fff; background-image:none; font-size:11pt; }
+    .app{ max-width:none; padding:0; }
+    .topbar, .intro, .inputs, .analyze-bar, .toast{ display:none !important; }
+    .score-hero, .cat, .finding, .kw-box, .action-plan{
+      box-shadow:none; border-color:#bbb;
+      break-inside:avoid;
+    }
+    .finding-body{ display:block !important; }
+    .score-ring svg{ display:none; }
+    .score-inner .num{ font-size:40pt; }
+    .score-ring{ width:auto; height:auto; }
+  }
+
+  @media (max-width:640px){
+    .app{ padding:14px 12px 60px; }
+    .intro{ padding:20px; }
+    .intro h2{ font-size:20px; }
+    .panel{ padding:15px 16px; }
+    #cvInput{ min-height:300px; }
+    .score-hero{ padding:20px; }
+    .score-inner .num{ font-size:42px; }
+    .score-ring{ width:150px; height:150px; }
+    .finding-body{ padding-left:20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">📋</div>
+      <div>
+        <h1>ATS CV Checker</h1>
+        <p>Free · Runs offline · Nothing uploaded</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn ghost small" id="saveToolBtn" type="button">Save this tool</button>
+      <button class="btn ghost small" id="printBtn" type="button">Print report</button>
+      <button class="btn primary small" id="downloadReportBtn" type="button" disabled>Download report</button>
+    </div>
+  </header>
+
+  <section class="intro">
+    <div class="intro-inner">
+      <span class="eyebrow">Before you apply</span>
+      <h2>Will your CV survive the applicant tracking system?</h2>
+      <p>
+        Most large employers run CVs through software before a human ever
+        sees them. This tool checks your CV against thirty ATS rules and
+        shows you exactly what to change — with the specific evidence from
+        your CV, step-by-step fixes, and how many points each fix is worth.
+      </p>
+      <p>
+        Drop in a <strong>.docx</strong>, <strong>.txt</strong>, or
+        <strong>.md</strong> file, or paste the text directly. Everything
+        runs in your browser. Nothing is uploaded.
+      </p>
+    </div>
+  </section>
+
+  <div class="inputs">
+
+    <section class="panel">
+      <header class="panel-head">
+        <h3><span class="dot"></span>Your CV</h3>
+        <span class="hint">Drop a file or paste</span>
+      </header>
+
+      <label class="drop" id="cvDrop" for="cvFile">
+        <span class="big">📄</span>
+        <p id="dropTitle">Drop your CV here or click to browse</p>
+        <small id="dropSub">Everything is processed in your browser — nothing is uploaded</small>
+        <span class="formats">
+          <span class="fmt">.DOCX</span>
+          <span class="fmt">.TXT</span>
+          <span class="fmt">.MD</span>
+          <span class="fmt legacy">.DOC (best effort)</span>
+        </span>
+      </label>
+      <input type="file" id="cvFile" accept=".txt,.md,.docx,.doc,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword" hidden>
+
+      <div class="file-chip" id="fileChip" style="display:none;">
+        <span class="file-chip-icon">📄</span>
+        <span class="file-chip-name" id="fileChipName"></span>
+        <span class="file-chip-meta" id="fileChipMeta"></span>
+        <button class="file-chip-close" id="fileChipClear" type="button" title="Clear file">×</button>
+      </div>
+
+      <textarea id="cvInput" placeholder="Your CV text will appear here once you load a file, or you can paste it directly from Word, Google Docs, or a PDF."></textarea>
+
+      <div class="panel-actions">
+        <span class="counter" id="cvCounter">0 words · 0 characters</span>
+        <button class="btn ghost small" id="clearCvBtn" type="button">Clear</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <header class="panel-head">
+        <h3><span class="dot"></span>Job description</h3>
+        <span class="hint">Optional</span>
+      </header>
+
+      <textarea id="jdInput" placeholder="Optional — paste the job description here to check keyword match."></textarea>
+
+      <div class="panel-actions">
+        <span class="counter" id="jdCounter">0 words · 0 characters</span>
+        <button class="btn ghost small" id="clearJdBtn" type="button">Clear</button>
+      </div>
+
+      <p style="font-size:12px;color:var(--faint);margin:12px 0 0;line-height:1.6;">
+        With a job description, the tool also checks keyword match and tells
+        you exactly which terms are missing from your CV.
+      </p>
+    </section>
+  </div>
+
+  <div class="analyze-bar">
+    <div class="msg" id="analyzeMsg">
+      <b>Ready.</b> Load your CV and click Analyze.
+    </div>
+    <button class="btn primary" id="analyzeBtn" type="button">Analyze my CV</button>
+  </div>
+
+  <section id="results">
+    <div class="score-hero">
+      <div class="score-ring">
+        <svg viewBox="0 0 180 180">
+          <circle class="track" cx="90" cy="90" r="78"/>
+          <circle class="progress" id="scoreProgress" cx="90" cy="90" r="78"
+                  stroke="#059669" stroke-dasharray="490" stroke-dashoffset="490"/>
+        </svg>
+        <div class="score-inner">
+          <span class="num" id="scoreNum">0</span>
+          <span class="out-of">out of 100</span>
+          <span class="grade fail" id="scoreGrade">—</span>
+        </div>
+      </div>
+
+      <div class="score-text">
+        <h2 id="scoreHeadline">Analysing…</h2>
+        <p id="scoreSummary"></p>
+        <p id="scoreVerdict"></p>
+      </div>
+    </div>
+
+    <div class="action-plan" id="actionPlan" style="display:none;">
+      <div class="action-plan-head">
+        <div class="icon">▶</div>
+        <div>
+          <h2>Start here</h2>
+          <p id="actionPlanSub">Do these in order — biggest score gains first</p>
+        </div>
+      </div>
+      <ol class="action-list" id="actionList"></ol>
+    </div>
+
+    <div class="cats" id="catsGrid"></div>
+
+    <div class="findings-head">
+      <h2>All findings</h2>
+      <p id="findingsCount">—</p>
+    </div>
+    <div id="findingsList"></div>
+
+    <div id="keywordsSection" style="display:none;">
+      <div class="findings-head" style="margin-top:28px;">
+        <h2>Keyword match</h2>
+        <p id="kwSummary"></p>
+      </div>
+      <div class="kw-grid">
+        <div class="kw-box matched">
+          <h4>✓ Matched in your CV</h4>
+          <div class="kw-chips" id="kwMatched"></div>
+        </div>
+        <div class="kw-box missing">
+          <h4>✕ Missing from your CV</h4>
+          <div class="kw-chips" id="kwMissing"></div>
+        </div>
+      </div>
+      <p style="font-size:12.5px;color:var(--faint);margin:12px 0 0;line-height:1.65;">
+        Only add a missing keyword if it genuinely describes something you have done.
+      </p>
+    </div>
+  </section>
+
+  <section id="placeholder" class="placeholder">
+    <span class="big">📊</span>
+    <p style="margin:0;">Your report will appear here once you analyse a CV.</p>
+  </section>
+
+  <footer style="margin-top:36px;padding-top:22px;border-top:1px solid var(--line);
+                 font-size:12.5px;color:var(--faint);text-align:center;line-height:1.7;">
+    <p style="margin:0 0 4px;">
+      <strong style="color:var(--ink-soft);">All analysis runs locally in your browser.</strong>
+      Nothing is uploaded, stored, or transmitted.
+    </p>
+    <p style="margin:0;">Save this tool as an HTML file to use it offline at any time.</p>
+    <p style="margin:14px 0 0;font-size:13px;color:var(--ink-soft);">
+      If you found this useful, I've made many more planners and tools —
+      <a href="https://payhip.com/AurkusHub" target="_blank" rel="noopener"
+         style="color:var(--navy-2);font-weight:700;text-decoration:none;border-bottom:1px solid var(--line-hi);">Click Here</a>
+    </p>
+  </footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+var SECTION_HEADERS = {
+  summary: ['professional summary','summary','profile','about me','personal statement','career objective','objective','personal profile','professional profile'],
+  experience: ['work experience','professional experience','experience','employment history','employment','career history','relevant experience','professional background'],
+  education: ['education','academic background','academic history','qualifications','education and training','educational background'],
+  skills: ['skills','technical skills','core competencies','key skills','areas of expertise','proficiencies','core skills','professional skills','technical proficiencies'],
+  certifications: ['certifications','certificates','licenses','licences','accreditations','professional development','training'],
+  projects: ['projects','personal projects','side projects','portfolio','key projects','selected projects']
+};
+
+var STRONG_VERBS = ['achieved','accelerated','acquired','adapted','administered','advanced','advised','analysed','analyzed','architected','assembled','assessed','authored','automated','balanced','benchmarked','built','budgeted','centralised','centralized','championed','coached','collaborated','communicated','compiled','completed','composed','conducted','consolidated','constructed','consulted','converted','coordinated','created','cultivated','cut','decreased','defined','delivered','demonstrated','deployed','designed','developed','devised','diagnosed','directed','discovered','documented','doubled','drove','earned','edited','educated','eliminated','enabled','engineered','enhanced','established','evaluated','examined','exceeded','executed','expanded','expedited','facilitated','finalised','finalized','forecast','formed','founded','generated','grew','guided','halved','headed','identified','implemented','improved','increased','influenced','initiated','innovated','inspected','installed','instituted','integrated','interpreted','introduced','invented','investigated','launched','led','leveraged','maintained','managed','marketed','maximised','maximized','measured','mentored','migrated','minimised','minimized','mobilised','mobilized','modernised','modernized','monitored','motivated','negotiated','nurtured','obtained','operated','optimised','optimized','orchestrated','organised','organized','overhauled','oversaw','owned','partnered','performed','pioneered','planned','prepared','presented','prioritised','prioritized','processed','produced','programmed','projected','promoted','proposed','provided','published','quantified','rebuilt','recommended','reconciled','recruited','redesigned','reduced','refined','reformed','reorganised','reorganized','reported','researched','resolved','restructured','revamped','reviewed','revitalised','revitalized','saved','scaled','secured','selected','shaped','simplified','solved','sourced','spearheaded','standardised','standardized','steered','streamlined','strengthened','structured','studied','supervised','supported','surpassed','sustained','synthesised','synthesized','taught','tested','tracked','trained','transformed','translated','tripled','troubleshot','unified','upgraded','validated','verified','won'];
+
+var WEAK_PHRASES = ['responsible for','duties included','duties include','worked on','helped with','assisted with','involved in','tasked with','in charge of','handled','took part in','participated in','was part of'];
+
+var CLICHES = ['team player','hard worker','hard-working','hard working','go-getter','go getter','think outside the box','thinking outside the box','results-driven','results driven','self-starter','self starter','detail-oriented','detail oriented','dynamic','proactive','excellent communication skills','strong work ethic','passionate','motivated individual','people person','multitasker','multitasking','hit the ground running','wear many hats','jack of all trades','synergy','leverage','utilise','utilize','cutting-edge','cutting edge','world-class','world class','best-in-class','best in class','game-changer','game changer','rockstar','ninja','guru'];
+
+var STOPWORDS = ['a','an','and','are','as','at','be','by','for','from','has','have','had','he','her','his','him','she','they','them','their','the','this','that','these','those','to','of','on','in','is','it','its','was','were','with','without','will','would','can','could','should','may','might','must','or','but','if','then','than','so','such','not','no','nor','do','does','did','done','doing','been','being','am','into','out','up','down','over','under','again','further','once','here','there','when','where','why','how','all','any','both','each','few','more','most','other','some','only','own','same','too','very','just','about','after','before','between','during','through','above','below','off','you','your','yours','we','us','our','ours','who','whom','which','what'];
+
+/* Bullet-line detector. No /g flag so .test() and .replace() don't share
+   lastIndex state between calls. */
+var BULLET_LINE_RE = /^\s*(?:[-*•·‣◦▪▫●○■□–—]|\d{1,2}[.)])\s+/;
+
+/* =========================================================
+   Verb detection
+   =========================================================
+   ATS software does not parse grammar. This exists for the
+   human reviewer. We detect a verb-led bullet morphologically
+   rather than from a fixed whitelist, so "Shipped",
+   "Replatformed" and "Wrote" count without being enumerated.
+   ========================================================= */
+
+var STRONG_VERBS_INDEX = {};
+STRONG_VERBS.forEach(function(v){ STRONG_VERBS_INDEX[v] = true; });
+
+/* Irregular past-tense and past-participle forms — a finite list. */
+var IRREGULAR_SET = {};
+('led built ran made wrote drove grew won cut set put held kept brought taught thought ' +
+ 'bought sold sent spent found got gave took went came saw said told began broke chose ' +
+ 'drew fell felt fought flew forgot froze heard hid hit hurt laid left lent let lit lost ' +
+ 'meant met paid read rode rang rose sought shook shone shot showed shut sang sank sat ' +
+ 'slept slid spoke spread stood stole stuck struck swore swept swam swung threw understood ' +
+ 'woke wore withdrew arose ate beat became bent bet bit bled blew bound bred cast caught ' +
+ 'clung crept dealt dug dived dove drank fed fled flung forgave hung knelt knew learnt ' +
+ 'lied overcame overtook proved quit rebuilt repaid rewrote rid rung sewed shed shrank ' +
+ 'slung slit sowed sped spelt split spun sprang stank stung strove swelled tore trod wove ' +
+ 'wept wound wrung been had did was were begun chosen done drawn driven eaten fallen ' +
+ 'flown forgotten frozen given gone hidden known ridden risen run seen shaken shown sung ' +
+ 'spoken stolen taken thrown woken worn written').split(/\s+/)
+  .forEach(function(v){ IRREGULAR_SET[v] = true; });
+
+/* Base forms of the verbs that most often open a CV bullet. Needed
+   for CVs written in the present tense ("Manage a team of 8") which
+   no suffix rule can reliably identify. */
+var BASE_VERB_SET = {};
+('manage lead build design develop create deliver drive own run write ship grow scale ' +
+ 'reduce increase improve launch plan coordinate analyse analyze research test support ' +
+ 'maintain monitor train mentor coach present report review implement deploy migrate ' +
+ 'optimise optimize automate streamline negotiate collaborate partner define establish ' +
+ 'oversee supervise recruit hire budget forecast audit document troubleshoot resolve ' +
+ 'produce direct execute evaluate identify initiate integrate introduce measure mobilise ' +
+ 'mobilize modernise modernize organise organize prioritise prioritize process provide ' +
+ 'rebuild recommend redesign refine reform reorganise reorganize restructure revise save ' +
+ 'secure select shape simplify solve source spearhead standardise standardize steer ' +
+ 'strengthen structure study teach track transform translate upgrade validate verify win ' +
+ 'achieve acquire adapt administer advance advise architect assemble assess author ' +
+ 'benchmark centralise centralize champion communicate compile complete compose conduct ' +
+ 'consolidate construct consult convert decrease demonstrate devise diagnose discover ' +
+ 'double earn edit educate eliminate enable engineer enhance exceed expedite facilitate ' +
+ 'finalise finalize form found generate guide halve head influence innovate inspect ' +
+ 'install institute interpret invent investigate leverage maximise maximize ' +
+ 'minimise minimize motivate nurture obtain operate orchestrate overhaul perform pioneer ' +
+ 'prepare programme project promote propose publish quantify reconcile rehabilitate ' +
+ 'reimagine remodel render renew renovate repair replace represent reproduce require ' +
+ 'rescue reshape restore retain rethink retrieve return reveal reverse revitalise ' +
+ 'revitalize reward rotate safeguard salvage satisfy schedule scrutinise scrutinize sell ' +
+ 'separate serve settle shorten showcase sign simulate sketch solidify sort specify ' +
+ 'sponsor stabilise stabilize staff stage stimulate strategise strategize submit ' +
+ 'substantiate suggest summarise summarize supply survey sustain synthesise synthesize ' +
+ 'tabulate tailor target testify tighten trace trade transcribe transfer transition ' +
+ 'transmit trim triple unify unite unlock update uphold utilise utilize value visualise ' +
+ 'visualize volunteer weigh widen witness yield').split(/\s+/)
+  .forEach(function(v){ BASE_VERB_SET[v] = true; });
+
+/* Words that legitimately open a bullet but are not verbs. */
+var NON_VERB_OPENERS = {};
+('a an the my our your their his her its this that these those i we you he she it they ' +
+ 'all any both each every few many most no some such and but or so yet nor about above ' +
+ 'across after against along among around at before behind below beneath beside between ' +
+ 'beyond during for from in inside into near of off on onto out outside over past since ' +
+ 'through throughout to toward under underneath until up upon with within without ' +
+ 'not also just only even still again further more less very much quite rather per via plus')
+  .split(/\s+/).forEach(function(w){ NON_VERB_OPENERS[w] = true; });
+
+function classifyOpener(rawWord){
+  if (!rawWord) return { kind:'empty', verb:false };
+
+  var w = String(rawWord).toLowerCase().replace(/[^a-z'’-]/g, '');
+  if (!w) return { kind:'empty', verb:false };
+
+  if (NON_VERB_OPENERS[w]) return { kind:'non-verb', verb:false };
+  if (/^\d/.test(rawWord))  return { kind:'non-verb', verb:false };
+
+  /* 1. Curated list or irregular table — known good. */
+  if (STRONG_VERBS_INDEX[w] || IRREGULAR_SET[w]) return { kind:'past', verb:true };
+
+  /* 2. Regular past / past participle. */
+  if (/[a-z]{2,}ed$/.test(w)) return { kind:'past', verb:true };
+
+  /* 3. Base form from the common-verb list. */
+  if (BASE_VERB_SET[w]) return { kind:'base', verb:true };
+
+  /* 4. Gerund — verb-derived, but reads as a noun phrase at bullet
+        start, so it counts as a weaker signal. */
+  if (/[a-z]{3,}ing$/.test(w)) return { kind:'gerund', verb:true };
+
+  /* 5. Third-person present, but only when the stem is a known verb.
+        Rejects "sales", "results", "services". */
+  if (/s$/.test(w)){
+    var stem = w.replace(/ies$/, 'y').replace(/s$/, '');
+    if (BASE_VERB_SET[stem] || BASE_VERB_SET[stem + 'e']){
+      return { kind:'present', verb:true };
+    }
+  }
+
+  /* 6. Suffix heuristics for base forms not on the list. */
+  if (/(?:ise|ize|ate|ify|fy)$/.test(w)) return { kind:'base', verb:true };
+
+  return { kind:'unknown', verb:false };
+}
+
+function $(id){ return document.getElementById(id); }
+
+function esc(s){
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function countWords(text){
+  if (!text) return 0;
+  var s = String(text).trim();
+  if (!s) return 0;
+  var matches = s.match(/\S+/g);
+  return matches ? matches.length : 0;
+}
+
+/* Normalise a line so section headers survive punctuation and layout
+   quirks: trailing separators ("Education /"), combined headings
+   ("Education/Qualifications"), pipe/comma separators ("Skills | Tools"),
+   ampersands ("Education & Training") and stray colons or bullets.
+   Any non-letter/digit character becomes a space, so "/" no longer
+   glues itself to the header word. */
+function normaliseLine(s){
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\u00c0-\u024f\u0370-\u03ff\u0400-\u04ff\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/* =========================================================
+   File readers — DOCX, DOC, TXT
+   ========================================================= */
+
+/* Minimal ZIP central-directory reader. Handles .docx and .odt. */
+function readZipEntry(arrayBuffer, entryName){
+  return new Promise(function(resolve, reject){
+    try {
+      var view = new DataView(arrayBuffer);
+      var bytes = new Uint8Array(arrayBuffer);
+
+      /* Find End of Central Directory (EOCD) — signature 0x06054b50 */
+      var eocdOffset = -1;
+      var minStart = Math.max(0, bytes.length - 65558);
+      for (var i = bytes.length - 22; i >= minStart; i--){
+        if (view.getUint32(i, true) === 0x06054b50){
+          eocdOffset = i;
+          break;
+        }
+      }
+      if (eocdOffset === -1){
+        reject(new Error('Not a valid ZIP archive'));
+        return;
+      }
+
+      var cdOffset = view.getUint32(eocdOffset + 16, true);
+      var cdCount  = view.getUint16(eocdOffset + 10, true);
+
+      var pos = cdOffset;
+      for (var e = 0; e < cdCount; e++){
+        if (view.getUint32(pos, true) !== 0x02014b50) break;
+
+        var compression    = view.getUint16(pos + 10, true);
+        var compressedSize = view.getUint32(pos + 20, true);
+        var nameLen        = view.getUint16(pos + 28, true);
+        var extraLen       = view.getUint16(pos + 30, true);
+        var commentLen     = view.getUint16(pos + 32, true);
+        var localOffset    = view.getUint32(pos + 42, true);
+
+        var nameBytes = bytes.subarray(pos + 46, pos + 46 + nameLen);
+        var name = new TextDecoder('utf-8').decode(nameBytes);
+
+        if (name === entryName){
+          if (view.getUint32(localOffset, true) !== 0x04034b50){
+            reject(new Error('Bad local file header'));
+            return;
+          }
+          var localNameLen  = view.getUint16(localOffset + 26, true);
+          var localExtraLen = view.getUint16(localOffset + 28, true);
+          var dataStart = localOffset + 30 + localNameLen + localExtraLen;
+          var compressedData = bytes.subarray(dataStart, dataStart + compressedSize);
+
+          if (compression === 0){
+            var copy = new Uint8Array(compressedData.length);
+            copy.set(compressedData);
+            resolve(copy.buffer);
+            return;
+          }
+
+          if (compression === 8){
+            if (typeof DecompressionStream === 'undefined'){
+              reject(new Error('Your browser does not support file decompression. Please paste the text instead.'));
+              return;
+            }
+            var ds = new DecompressionStream('deflate-raw');
+            var writer = ds.writable.getWriter();
+            var reader = ds.readable.getReader();
+            writer.write(compressedData);
+            writer.close();
+
+            var chunks = [];
+            var pump = function(){
+              reader.read().then(function(result){
+                if (result.done){
+                  var total = 0;
+                  for (var c = 0; c < chunks.length; c++) total += chunks[c].length;
+                  var out = new Uint8Array(total);
+                  var off = 0;
+                  for (var d = 0; d < chunks.length; d++){
+                    out.set(chunks[d], off);
+                    off += chunks[d].length;
+                  }
+                  resolve(out.buffer);
+                  return;
+                }
+                chunks.push(result.value);
+                pump();
+              }, function(err){
+                reject(err);
+              });
+            };
+            pump();
+            return;
+          }
+
+          reject(new Error('Unsupported compression method: ' + compression));
+          return;
+        }
+
+        pos += 46 + nameLen + extraLen + commentLen;
+      }
+
+      reject(new Error('Entry "' + entryName + '" not found in archive'));
+    } catch(err){
+      reject(err);
+    }
+  });
+}
+
+/* Extract plain text from a .docx XML document */
+function extractDocxText(xmlString){
+  var parser = new DOMParser();
+  var doc = parser.parseFromString(xmlString, 'application/xml');
+
+  var parseErr = doc.querySelector('parsererror');
+  if (parseErr){
+    throw new Error('Could not read the document XML');
+  }
+
+  var out = [];
+
+  /* Word stores list bullets as numbering metadata (w:numPr) rather than
+     as a literal bullet character. Detect that so the bullet survives
+     into the extracted plain text — the analyser needs the "• " prefix. */
+  function paragraphIsList(node){
+    for (var a = 0; a < node.childNodes.length; a++){
+      var pPr = node.childNodes[a];
+      if (pPr.nodeType !== 1 || pPr.localName !== 'pPr') continue;
+
+      for (var b = 0; b < pPr.childNodes.length; b++){
+        var numPr = pPr.childNodes[b];
+        if (numPr.nodeType !== 1 || numPr.localName !== 'numPr') continue;
+
+        for (var c = 0; c < numPr.childNodes.length; c++){
+          var numId = numPr.childNodes[c];
+          if (numId.nodeType === 1 && numId.localName === 'numId'){
+            var val = numId.getAttribute('w:val') || numId.getAttribute('val');
+            if (val === '0') return false;   /* numId 0 means "no numbering" */
+          }
+        }
+        return true;
+      }
+
+      for (var d = 0; d < pPr.childNodes.length; d++){
+        var pStyle = pPr.childNodes[d];
+        if (pStyle.nodeType === 1 && pStyle.localName === 'pStyle'){
+          var sv = pStyle.getAttribute('w:val') || pStyle.getAttribute('val') || '';
+          if (/^list/i.test(sv)) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function walk(node){
+    if (node.nodeType === 1){
+      var name = node.localName;
+
+      if (name === 't'){
+        out.push(node.textContent);
+        return;
+      }
+      if (name === 'tab'){
+        out.push('\t');
+        return;
+      }
+      if (name === 'br'){
+        out.push('\n');
+        return;
+      }
+      if (name === 'p'){
+        if (paragraphIsList(node)) out.push('\u2022 ');
+        for (var i = 0; i < node.childNodes.length; i++) walk(node.childNodes[i]);
+        out.push('\n');
+        return;
+      }
+      if (name === 'tc'){
+        for (var j = 0; j < node.childNodes.length; j++) walk(node.childNodes[j]);
+        out.push('\t');
+        return;
+      }
+      if (name === 'tr'){
+        for (var k = 0; k < node.childNodes.length; k++) walk(node.childNodes[k]);
+        out.push('\n');
+        return;
+      }
+    }
+    for (var m = 0; m < node.childNodes.length; m++) walk(node.childNodes[m]);
+  }
+
+  walk(doc.documentElement);
+
+  var text = out.join('');
+  text = text.replace(/[ \t]+\n/g, '\n');
+  text = text.replace(/\n{3,}/g, '\n\n');
+  text = text.replace(/[ \t]{2,}/g, ' ');
+  return text.trim();
+}
+
+/* Read a .docx file and return the text */
+function readDocxFile(file){
+  return file.arrayBuffer().then(function(buf){
+    return readZipEntry(buf, 'word/document.xml');
+  }).then(function(xmlBuffer){
+    var decoder = new TextDecoder('utf-8');
+    var xmlString = decoder.decode(new Uint8Array(xmlBuffer));
+    return extractDocxText(xmlString);
+  });
+}
+
+/* Best-effort extraction from a legacy .doc binary file */
+function readDocFile(file){
+  return file.arrayBuffer().then(function(buf){
+    var bytes = new Uint8Array(buf);
+    var lines = [];
+
+    /* Try UTF-16LE (common for modern Word .doc) */
+    var currentRun = '';
+    for (var i = 0; i < bytes.length - 1; i += 2){
+      var low = bytes[i];
+      var high = bytes[i + 1];
+      if (high === 0 && low >= 32 && low < 127){
+        currentRun += String.fromCharCode(low);
+      } else if (low === 13 && high === 0){
+        if (currentRun.length >= 3) lines.push(currentRun);
+        currentRun = '';
+      } else if (low === 10 && high === 0){
+        /* line feed — ignore, we break on CR */
+      } else {
+        if (currentRun.length >= 12) lines.push(currentRun);
+        currentRun = '';
+      }
+    }
+    if (currentRun.length >= 3) lines.push(currentRun);
+
+    var utf16Text = lines.join('\n');
+
+    if (utf16Text.replace(/\s/g, '').length >= 200){
+      return utf16Text;
+    }
+
+    /* Fall back to single-byte extraction */
+    var singleLines = [];
+    var run = '';
+    for (var b = 0; b < bytes.length; b++){
+      var v = bytes[b];
+      if (v >= 32 && v < 127){
+        run += String.fromCharCode(v);
+      } else if (v === 13 || v === 10 || v === 9){
+        if (run.length >= 8) singleLines.push(run);
+        run = '';
+      } else {
+        if (run.length >= 12) singleLines.push(run);
+        run = '';
+      }
+    }
+    if (run.length >= 8) singleLines.push(run);
+
+    return singleLines.join('\n');
+  });
+}
+
+/* Unified file reader */
+function readAnyFile(file){
+  var name = (file.name || '').toLowerCase();
+
+  if (name.endsWith('.docx')){
+    return readDocxFile(file).then(function(text){
+      return { text: text, source: 'docx', warn: false };
+    });
+  }
+
+  if (name.endsWith('.doc')){
+    return readDocFile(file).then(function(text){
+      var clean = (text || '').replace(/\s+/g, ' ').trim();
+      if (clean.length < 200){
+        throw new Error('Could not reliably read this .doc file. Please open it in Word and save as .docx, or paste the text manually.');
+      }
+      return { text: text, source: 'doc', warn: true };
+    });
+  }
+
+  return file.text().then(function(text){
+    return { text: text, source: 'text', warn: false };
+  });
+}
+
+/* =========================================================
+   Quantified-result detection
+   =========================================================
+   Any surviving number counts as a metric. We only strip the
+   things that contain digits but prove nothing: emails, URLs,
+   phone numbers, and years / date ranges. */
+function findQuantified(text){
+  var s = String(text || '');
+
+  /* Remove non-metric digit clusters */
+  s = s.replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, ' ');
+  s = s.replace(/(?:https?:\/\/|www\.)\S+/gi, ' ');
+
+  /* Phone numbers: 9+ digits in one cluster */
+  s = s.replace(/\+?\(?\d[\d\s\-().]{6,}\d/g, function(m){
+    return (m.replace(/\D/g, '').length >= 9) ? ' ' : m;
+  });
+
+  /* Years and date ranges — unless they are money, percentages,
+     or magnitudes ("2020" alone proves nothing; "£2020k" does). */
+  s = s.replace(/\b(?:19|20)\d{2}\b/g, function(m, offset){
+    var before = s.slice(Math.max(0, offset - 16), offset);
+    var after  = s.slice(offset + m.length, offset + m.length + 16);
+    if (/[£$€]\s?$/.test(before)) return m;
+    if (/^\s*(?:%|percent)/i.test(after)) return m;
+    if (/^\s*(?:k|m|bn|million|billion|x|times|fold)\b/i.test(after)) return m;
+    return ' ';
+  });
+
+  var samples = [];
+  var seen = {};
+  var re = /\d[\d,]*(?:\.\d+)?/g;
+  var match;
+
+  while ((match = re.exec(s)) !== null){
+    var raw   = match[0];
+    var start = match.index;
+    var end   = start + raw.length;
+
+    /* Skip list numbering: "1." / "2)" at the start of a line */
+    var lineStart = s.lastIndexOf('\n', start - 1) + 1;
+    if (/^\s*$/.test(s.slice(lineStart, start)) && /^[.)]/.test(s.charAt(end))) continue;
+
+    /* Skip digits glued into words (B2B, COVID-19) */
+    if (/[A-Za-z]/.test(s.charAt(start - 1))) continue;
+
+    /* Allow a magnitude suffix: 2.4m, 40k, 3x — otherwise skip */
+    if (/[A-Za-z]/.test(s.charAt(end))){
+      var tail = s.slice(end, end + 10).toLowerCase();
+      if (!/^(?:k|m|bn|mm|million|billion|thousand|x|times|fold)\b/.test(tail)) continue;
+    }
+
+    var key = raw.replace(/[,\s]/g, '').toLowerCase();
+    if (seen[key]) continue;
+    seen[key] = true;
+    samples.push(raw);
+  }
+
+  /* Spelled-out quantities */
+  var spelled = s.match(/\b(?:doubled|tripled|quadrupled|halved|zero|dozens|hundreds|thousands|millions|billions)\b/gi) || [];
+
+  return {
+    count: samples.length + spelled.length,
+    samples: samples
+  };
+}
+
+/* =========================================================
+   Analysis
+   ========================================================= */
+function analyze(text, jd){
+  var findings = [];
+  var categories = {
+    contact:    { name:'Contact & Header',  score:0, max:15, colour:'#1e3a5f', potential:0 },
+    structure:  { name:'Structure',         score:0, max:20, colour:'#6d28d9', potential:0 },
+    formatting: { name:'Formatting',        score:0, max:15, colour:'#b45309', potential:0 },
+    content:    { name:'Content quality',   score:0, max:20, colour:'#059669', potential:0 },
+    language:   { name:'Language',          score:0, max:15, colour:'#be123c', potential:0 },
+    keywords:   { name:'Keyword match',     score:0, max:15, colour:'#0891b2', potential:0 }
+  };
+
+  var lowerText = text.toLowerCase();
+  var lines = text.split(/\r?\n/);
+  var wordCount = countWords(text);
+
+  function addFinding(opts){
+    findings.push({
+      id: opts.id,
+      cat: opts.cat,
+      state: opts.state,
+      priority: opts.priority || (opts.state === 'fail' ? 'fix' : opts.state === 'warn' ? 'recommend' : 'optional'),
+      title: opts.title,
+      summary: opts.summary || '',
+      evidence: opts.evidence || null,
+      steps: opts.steps || null,
+      beforeAfter: opts.beforeAfter || null,
+      impact: opts.impact || null,
+      pointsAvailable: opts.pointsAvailable || 0
+    });
+  }
+
+  /* CONTACT */
+  var emailMatch = text.match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/);
+  if (emailMatch){
+    categories.contact.score += 4;
+    addFinding({ id:'email', cat:'contact', state:'pass',
+      title:'Email address found', summary:'Detected ' + emailMatch[0] + '.' });
+  } else {
+    categories.contact.potential += 4;
+    addFinding({ id:'email', cat:'contact', state:'fail', priority:'fix',
+      title:'No email address detected',
+      summary:'ATS software cannot find an email address, so it has nowhere to send replies or link your record.',
+      evidence:['Searched for a pattern like name@example.com — nothing found.'],
+      steps:[
+        'Add your email as <b>plain text</b> in the header. Not inside an image or text box.',
+        'Place it on the same line as your phone: <b>name@email.com · +44 7700 900123</b>.',
+        'Use a professional address — firstname.lastname@ is safer than a nickname.'
+      ],
+      beforeAfter:{ before:'[header design with icon, email not readable as text]',
+        after:'alex.morgan@email.com · +44 7700 900123' },
+      impact:'Recovers 4 of 15 Contact points.',
+      pointsAvailable:4 });
+  }
+
+  var phoneMatch = text.match(/\+?\d[\d\s\-().]{7,}\d/);
+  if (phoneMatch){
+    categories.contact.score += 4;
+    addFinding({ id:'phone', cat:'contact', state:'pass',
+      title:'Phone number found', summary:'Detected ' + phoneMatch[0].trim() + '.' });
+  } else {
+    categories.contact.potential += 4;
+    addFinding({ id:'phone', cat:'contact', state:'fail', priority:'fix',
+      title:'No phone number detected',
+      summary:'ATS parsers match a simple digit pattern. Unusual formats will not be recognised.',
+      evidence:['No phone-like pattern matched: expected something like +44 7700 900123.'],
+      steps:[
+        'Write the number plainly: <b>+44 7700 900123</b> or <b>07700 900123</b>.',
+        'Avoid letters standing in for numbers (no "0800-CALL-US").',
+        'Avoid periods between every digit. One space or hyphen per group is best.'
+      ],
+      impact:'Recovers 4 of 15 Contact points.',
+      pointsAvailable:4 });
+  }
+
+  if (/linkedin\.com\/(in|pub)\//i.test(text)){
+    categories.contact.score += 4;
+    addFinding({ id:'linkedin', cat:'contact', state:'pass',
+      title:'LinkedIn profile found', summary:'A LinkedIn URL is present.' });
+  } else if (/(https?:\/\/|www\.)[a-z0-9.-]+\.[a-z]{2,}/i.test(text)){
+    categories.contact.score += 3;
+    addFinding({ id:'linkedin', cat:'contact', state:'info', priority:'optional',
+      title:'Website found — no LinkedIn',
+      summary:'A portfolio or personal site is present, but most recruiters still look for a LinkedIn profile.' });
+  } else {
+    categories.contact.potential += 4;
+    addFinding({ id:'linkedin', cat:'contact', state:'warn', priority:'recommend',
+      title:'No LinkedIn or website',
+      summary:'Recruiters almost always search LinkedIn before an interview. An absent link signals less reachable.',
+      evidence:['No linkedin.com/in/ URL and no personal website found.'],
+      steps:[
+        'Add a short, clean URL to your LinkedIn at the top: <b>linkedin.com/in/yourname</b>.',
+        'If you have a portfolio relevant to the role, add it too: <b>yourname.com</b>.',
+        'Skip social profiles that are not relevant — Instagram, TikTok, Facebook.'
+      ],
+      impact:'Recovers up to 4 of 15 Contact points.',
+      pointsAvailable:4 });
+  }
+
+  var firstLine = '';
+  for (var i = 0; i < lines.length; i++){
+    var t = lines[i].trim();
+    if (t){ firstLine = t; break; }
+  }
+  if (firstLine && firstLine.length > 2 && firstLine.length < 60 &&
+      firstLine.indexOf(':') === -1 && firstLine.indexOf('@') === -1 &&
+      !/^(curriculum vitae|resume|cv|profile|summary)/i.test(firstLine)){
+    categories.contact.score += 3;
+    addFinding({ id:'name', cat:'contact', state:'pass',
+      title:'Name appears at the top', summary:'First line reads: ' + firstLine });
+  } else {
+    categories.contact.potential += 3;
+    addFinding({ id:'name', cat:'contact', state:'warn', priority:'fix',
+      title:'Name not clearly at the top',
+      summary:'ATS parsers look for the name in the first line or two.',
+      evidence: firstLine
+        ? ['First non-empty line: "' + firstLine + '" — does not look like a name.']
+        : ['The document appears empty at the top.'],
+      steps:[
+        'Put your full name as the <b>very first line</b> of plain text.',
+        'Do not put your name inside a Word header section — those are often stripped.',
+        'Use the same name you use on LinkedIn and your application form.'
+      ],
+      impact:'Recovers 3 of 15 Contact points.',
+      pointsAvailable:3 });
+  }
+
+  /* STRUCTURE */
+
+  /* A normalised line counts as a section header when it equals a known
+     key or starts with one ("education training", "skills and interests").
+     Separators have already been flattened to spaces by normaliseLine, so
+     "EDUCATION /", "Education/Qualifications" and "Skills | Tools" all
+     resolve to plain lowercase words. */
+  function matchesHeader(normalised, keys){
+    if (!normalised || normalised.length > 60) return false;
+    for (var j = 0; j < keys.length; j++){
+      var key = keys[j];
+      if (normalised === key) return true;
+      if (normalised.indexOf(key + ' ') === 0) return true;
+    }
+    return false;
+  }
+
+  function hasHeader(keys){
+    for (var i = 0; i < lines.length; i++){
+      var trimmed = normaliseLine(lines[i]);
+      if (!trimmed) continue;
+      if (matchesHeader(trimmed, keys)) return true;
+    }
+    return false;
+  }
+
+  var hasExperience = hasHeader(SECTION_HEADERS.experience);
+  var hasEducation = hasHeader(SECTION_HEADERS.education);
+  var hasSkills = hasHeader(SECTION_HEADERS.skills);
+  var hasSummary = hasHeader(SECTION_HEADERS.summary);
+
+  if (hasExperience){
+    categories.structure.score += 6;
+    addFinding({ id:'exp-section', cat:'structure', state:'pass',
+      title:'Experience section found', summary:'A recognisable experience header is present.' });
+  } else {
+    categories.structure.potential += 6;
+    addFinding({ id:'exp-section', cat:'structure', state:'fail', priority:'fix',
+      title:'No experience section detected',
+      summary:'This is the most important section for parsers. Without a standard header, work history may not be extracted.',
+      evidence:['Looked for headers like "Work Experience", "Professional Experience". None found.'],
+      steps:[
+        'Add a header on its own line: <b>WORK EXPERIENCE</b>.',
+        'Use plain text — no images, no icon next to the header.',
+        'Put it after the summary/contact block, before education.',
+        'Each role underneath: Job title, then Company, then dates on one line.'
+      ],
+      beforeAfter:{ before:'[roles listed with no section header]',
+        after:'WORK EXPERIENCE\n\nSenior Product Designer\nNorthwind Digital — London\n2022 – Present\n• Bullet point' },
+      impact:'Recovers 6 of 20 Structure points. Biggest single gain in Structure.',
+      pointsAvailable:6 });
+  }
+
+  if (hasEducation){
+    categories.structure.score += 4;
+  } else {
+    categories.structure.potential += 4;
+    addFinding({ id:'edu-section', cat:'structure', state:'warn', priority:'fix',
+      title:'No education section detected',
+      summary:'Most ATS systems expect an education section.',
+      evidence:['No header such as "Education" or "Qualifications" found.'],
+      steps:[
+        'Add a header: <b>EDUCATION</b>.',
+        'Include degree, institution, dates, and grade if notable.',
+        'No formal qualifications? List relevant training and certifications.'
+      ],
+      impact:'Recovers 4 of 20 Structure points.',
+      pointsAvailable:4 });
+  }
+
+  if (hasSkills){
+    categories.structure.score += 4;
+  } else {
+    categories.structure.potential += 4;
+    addFinding({ id:'skills-section', cat:'structure', state:'warn', priority:'fix',
+      title:'No skills section detected',
+      summary:'Many ATS systems score keyword match specifically against the skills section.',
+      evidence:['No header such as "Skills" or "Core Competencies" found.'],
+      steps:[
+        'Add a header: <b>SKILLS</b>.',
+        'Group by category: "Design", "Research", "Tools".',
+        'Use plain comma-separated terms — no bars, dots, or star ratings.'
+      ],
+      beforeAfter:{ before:'[no skills section; skills mixed into role descriptions]',
+        after:'SKILLS\n\nDesign — Product design, interaction design, design systems\nResearch — Usability testing, interviews, analytics\nTools — Figma, Framer, Maze, Linear' },
+      impact:'Recovers 4 of 20 Structure points, and improves keyword match.',
+      pointsAvailable:4 });
+  }
+
+  if (hasSummary){
+    categories.structure.score += 3;
+  } else {
+    categories.structure.potential += 3;
+    addFinding({ id:'summary-section', cat:'structure', state:'info', priority:'recommend',
+      title:'No professional summary detected',
+      summary:'Not required by ATS, but read by the human reviewer.',
+      evidence:['No header such as "Summary" or "Profile" found at the top.'],
+      steps:[
+        'Add a two- to three-sentence summary under your contact details.',
+        'Lead with your title and years of experience.',
+        'End with the specific outcome you are looking for.'
+      ],
+      beforeAfter:{ before:'[CV starts directly with experience section]',
+        after:'Product designer with eight years\' experience shipping digital products used by millions. Led checkout redesign lifting conversion 14%.' },
+      impact:'Recovers 3 of 20 Structure points.',
+      pointsAvailable:3 });
+  }
+
+  if (hasExperience && hasEducation){
+    var expIdx = -1, eduIdx = -1;
+    for (var i = 0; i < lines.length; i++){
+      var t2 = normaliseLine(lines[i]);
+      if (expIdx === -1 && matchesHeader(t2, SECTION_HEADERS.experience)) expIdx = i;
+      if (eduIdx === -1 && matchesHeader(t2, SECTION_HEADERS.education)) eduIdx = i;
+    }
+    if (expIdx > -1 && eduIdx > -1 && expIdx < eduIdx){
+      categories.structure.score += 3;
+    } else if (expIdx > -1 && eduIdx > -1){
+      addFinding({ id:'section-order', cat:'structure', state:'info', priority:'optional',
+        title:'Education appears before experience',
+        summary:'For candidates with experience, work history usually goes first.',
+        steps:[
+          'Move the experience section above education.',
+          'Exception: if you are a recent graduate or career changer, education-first is acceptable.'
+        ],
+        impact:'Recovers 3 of 20 Structure points.',
+        pointsAvailable:3 });
+    }
+  }
+
+  /* FORMATTING */
+  var tabCount = (text.match(/\t/g) || []).length;
+  if (tabCount === 0){
+    categories.formatting.score += 3;
+  } else {
+    categories.formatting.potential += 3;
+    addFinding({ id:'tabs', cat:'formatting', state:'warn', priority:'recommend',
+      title:tabCount + ' tab character' + (tabCount === 1 ? '' : 's') + ' found',
+      summary:'Tabs are usually a sign of column layout, which parsers jumble together.',
+      evidence:['Detected ' + tabCount + ' tab characters.'],
+      steps:[
+        'Remove all tabs from the CV.',
+        'Use spaces for indentation instead.',
+        'Convert any side-by-side layout to a single column.'
+      ],
+      impact:'Recovers 3 of 15 Formatting points.',
+      pointsAvailable:3 });
+  }
+
+  var strangeBullets = (text.match(/[▪▫◆◇◈●○■□★☆►▶▸➤➢➣➔✓✔✕✖✗✘❖✦✧]/g) || []).length;
+  if (strangeBullets === 0){
+    categories.formatting.score += 3;
+  } else {
+    categories.formatting.potential += 3;
+    addFinding({ id:'bullets', cat:'formatting', state:'warn', priority:'recommend',
+      title:strangeBullets + ' non-standard bullet character' + (strangeBullets === 1 ? '' : 's'),
+      summary:'Decorative bullets can render as garbled characters or merge into a wall of text.',
+      evidence:['Detected characters like ◆, ▸, ✓ — not standard bullets.'],
+      steps:[
+        'Replace every unusual bullet with a simple hyphen, asterisk, or (•).',
+        'Keep bullet characters consistent throughout the CV.'
+      ],
+      impact:'Recovers 3 of 15 Formatting points.',
+      pointsAvailable:3 });
+  }
+
+  var emojiCount = (text.match(/[\u2600-\u27BF]/g) || []).length;
+  if (emojiCount === 0){
+    categories.formatting.score += 2;
+  } else {
+    categories.formatting.potential += 2;
+    addFinding({ id:'emoji', cat:'formatting', state:'fail', priority:'fix',
+      title:emojiCount + ' emoji found',
+      summary:'Emojis almost always break the parser.',
+      evidence:['Detected ' + emojiCount + ' emoji character' + (emojiCount === 1 ? '' : 's') + '.'],
+      steps:[
+        'Remove every emoji from the CV.',
+        'Use plain section headers — the parser will understand them.',
+        'If the emoji was in a name or company, replace it with the plain text equivalent.'
+      ],
+      impact:'Recovers 2 of 15 Formatting points.',
+      pointsAvailable:2 });
+  }
+
+  var capsWords = text.match(/\b[A-Z]{4,}\b/g) || [];
+  var capsRatio = capsWords.length / Math.max(1, wordCount);
+  if (capsRatio < 0.03){
+    categories.formatting.score += 3;
+  } else if (capsRatio < 0.08){
+    categories.formatting.score += 1;
+    categories.formatting.potential += 2;
+    addFinding({ id:'caps', cat:'formatting', state:'info', priority:'optional',
+      title:capsWords.length + ' all-caps words detected',
+      summary:'Some capitalisation is normal for acronyms. Long runs are harder to read.',
+      evidence:['Examples: ' + capsWords.slice(0, 8).join(', ')],
+      steps:[
+        'Use title case for section headers: "Work Experience" not "WORK EXPERIENCE".',
+        'Reserve ALL CAPS for acronyms only: SEO, API, HTML.',
+        'Use bold or italics for emphasis.'
+      ] });
+  } else {
+    categories.formatting.potential += 3;
+    addFinding({ id:'caps', cat:'formatting', state:'warn', priority:'recommend',
+      title:capsWords.length + ' all-caps words — likely overused',
+      summary:'Heavy capitalisation suggests a CV designed visually rather than for the parser.',
+      evidence:['About ' + Math.round(capsRatio*100) + '% of words are all-caps. Examples: ' + capsWords.slice(0, 8).join(', ')],
+      steps:[
+        'Convert section headers to title case.',
+        'Reserve capitalisation for short acronyms.',
+        'Replace emphasis-by-caps with bold formatting.'
+      ],
+      impact:'Recovers up to 3 of 15 Formatting points.',
+      pointsAvailable:3 });
+  }
+
+  var longLines = 0;
+  for (var i = 0; i < lines.length; i++){
+    if (lines[i].length > 150) longLines++;
+  }
+  if (longLines === 0){
+    categories.formatting.score += 2;
+  } else if (longLines <= 3){
+    categories.formatting.score += 1;
+  } else {
+    categories.formatting.potential += 1;
+    addFinding({ id:'longlines', cat:'formatting', state:'info', priority:'optional',
+      title:longLines + ' unusually long lines',
+      summary:'Very long lines often indicate columns or tables being flattened.',
+      evidence:['Found ' + longLines + ' lines over 150 characters.'],
+      steps:[
+        'Break long paragraphs into shorter ones.',
+        'Avoid tables entirely — they rarely parse cleanly.',
+        'Convert columns to a single-column layout for the version you submit.'
+      ] });
+  }
+
+  categories.formatting.score += 2;
+
+  /* CONTENT */
+  var bulletLines = lines.filter(function(l){ return BULLET_LINE_RE.test(l); });
+  var bulletTexts = bulletLines.map(function(l){ return l.replace(BULLET_LINE_RE, '').trim(); });
+
+  var verbLed = [];
+  var gerundLed = [];
+  var nounLed = [];
+  var weakBullets = [];
+
+  bulletTexts.forEach(function(bt){
+    var opener = (bt.split(/\s+/)[0] || '');
+    var cls = classifyOpener(opener);
+    var lower = bt.toLowerCase();
+
+    var isWeak = false;
+    for (var i = 0; i < WEAK_PHRASES.length; i++){
+      if (lower.indexOf(WEAK_PHRASES[i]) === 0){ isWeak = true; break; }
+    }
+
+    if (isWeak)                     weakBullets.push(bt);
+    else if (cls.kind === 'gerund') gerundLed.push(bt);
+    else if (cls.verb)              verbLed.push(bt);
+    else                            nounLed.push(bt);
+  });
+
+  function snippet(b){ return '"' + b.split(/\s+/).slice(0, 9).join(' ') + '"'; }
+
+  if (bulletTexts.length >= 5){
+    var verbDerived = verbLed.length + gerundLed.length;
+    var ratio = verbDerived / bulletTexts.length;
+    var pct = Math.round(ratio * 100);
+
+    var openerEvidence = [
+      'Of ' + bulletTexts.length + ' bullets, ' + verbDerived + ' open with a verb.',
+      nounLed.length
+        ? 'Noun-led openers: ' + nounLed.slice(0, 4).map(snippet).join(', ')
+        : null
+    ].filter(Boolean);
+
+    if (ratio >= 0.7){
+      categories.content.score += 5;
+      addFinding({ id:'verbs', cat:'content', state:'pass',
+        title:pct + '% of bullets open with a verb',
+        summary:verbDerived + ' of ' + bulletTexts.length + ' bullets lead with an action, which is what recruiters scan for. ATS software does not check this.' });
+    } else if (ratio >= 0.4){
+      categories.content.potential += 2;
+      addFinding({ id:'verbs', cat:'content', state:'warn', priority:'recommend',
+        title:'Only ' + pct + '% of bullets open with a verb',
+        summary:'Bullets that lead with a verb scan faster for the human reviewer. ATS software does not parse grammar, so this is a readability fix, not a compliance one.',
+        evidence: openerEvidence,
+        steps:[
+          'Rewrite each bullet to start with the verb that describes what you did.',
+          '<b>Any tense works.</b> Past tense for roles you have left, present tense for the role you are in. Consistency within a role matters more than which tense you pick.',
+          'Openers that work: Led, Shipped, Built, Wrote, Rebuilt, Cut, Grew, Migrated, Negotiated, Ran.',
+          'Cut "Responsible for", "Worked on" and "Helped with" — they bury the action.',
+          'Aim for 70% or more of bullets opening with a verb.'
+        ],
+        beforeAfter:{ before:'• Responsible for managing the design team\n• The new checkout flow was worked on by me',
+          after:'• Managed a design team of eight across three products\n• Redesigned the checkout flow, lifting conversion by 14%' },
+        impact:'Recovers up to 2 Content points.',
+        pointsAvailable:2 });
+    } else {
+      categories.content.potential += 5;
+      addFinding({ id:'verbs', cat:'content', state:'fail', priority:'fix',
+        title:pct + '% of bullets open with a verb — most do not',
+        summary:'Most bullets read as descriptions of a job rather than records of what you did. This is the biggest single change to how the CV scans for a human reader.',
+        evidence: openerEvidence,
+        steps:[
+          'Rewrite every bullet to start with the verb.',
+          '<b>Past tense is not required.</b> Use past tense for roles you have left and present tense for the role you are in. Pick one and stay consistent within each role.',
+          'Cut the "responsible for", "worked on", "helped with" openers entirely.',
+          'Each bullet describes <b>what you did</b>, not <b>what your job was</b>.',
+          'Aim for 70% or more of bullets opening with a verb.'
+        ],
+        beforeAfter:{ before:'• Responsible for the sales pipeline\n• The migration project was helped with by me',
+          after:'• Built a sales pipeline generating £2.4m in the first year\n• Led migration of 40 services to AWS with zero downtime' },
+        impact:'Recovers 5 of 20 Content points.',
+        pointsAvailable:5 });
+    }
+  } else {
+    categories.content.score += 3;
+    categories.content.potential += 2;
+    addFinding({ id:'bullets-count', cat:'content', state:'info', priority:'recommend',
+      title:'Few bullet points detected',
+      summary:'Bullets are the expected format for experience descriptions.',
+      evidence:['Only ' + bulletTexts.length + ' bullet' + (bulletTexts.length === 1 ? '' : 's') + ' found.'],
+      steps:[
+        'Break each role\'s description into 3–5 bullets.',
+        'Start every bullet with an action verb.',
+        'One bullet per major responsibility or achievement.'
+      ],
+      impact:'Recovers up to 2 Content points.',
+      pointsAvailable:2 });
+  }
+
+  if (weakBullets.length > 0){
+    categories.content.potential += 2;
+    addFinding({ id:'weak-openers', cat:'content', state:'warn', priority:'recommend',
+      title:weakBullets.length + ' bullet' + (weakBullets.length === 1 ? '' : 's') + ' open with a weak phrase',
+      summary:'Phrases like "responsible for" or "helped with" read as a job description rather than an achievement.',
+      evidence: weakBullets.slice(0, 3).map(snippet),
+      steps:[
+        'Replace each weak opener with the verb that describes the action.',
+        'For each bullet, ask: what did I <b>do</b>?',
+        'If a bullet cannot start with a verb, it is probably not an achievement — cut it.'
+      ],
+      beforeAfter:{ before:'• Responsible for the marketing budget',
+        after:'• Managed a £180k annual marketing budget across five channels' },
+      impact:'Contributes to the verb ratio score above.',
+      pointsAvailable:2 });
+  }
+
+  var quant = findQuantified(text);
+  var quantNumbers = quant.count;
+  var quantEvidence = quant.count
+    ? ['Detected ' + quant.count + ' distinct numeric metric' + (quant.count === 1 ? '' : 's') +
+       ': ' + quant.samples.slice(0, 14).join(', ') + (quant.samples.length > 14 ? ', …' : '')]
+    : ['No numeric metrics found anywhere in the document.'];
+
+  if (quantNumbers >= 8){
+    categories.content.score += 5;
+    addFinding({ id:'quantified', cat:'content', state:'pass',
+      title:quantNumbers + ' quantified results found',
+      summary:'Numbers, percentages and metrics make achievements concrete.' });
+  } else if (quantNumbers >= 3){
+    categories.content.potential += 3;
+    addFinding({ id:'quantified', cat:'content', state:'warn', priority:'recommend',
+      title:'Only ' + quantNumbers + ' quantified result' + (quantNumbers === 1 ? '' : 's'),
+      summary:'Numbers are the single strongest signal of an achievement-led CV.',
+      evidence: quantEvidence,
+      steps:[
+        'Add at least one number to each role — ideally one per bullet.',
+        'Types of numbers: <b>revenue, users, headcount, %, time saved, budget managed</b>.',
+        'Team and scope counts work too: <b>"team of 8"</b>, <b>"3 product areas"</b>, <b>"40 services"</b>.',
+        'If you do not know the exact figure, use a defensible range.',
+        'Do not invent precision. Round numbers are honest.'
+      ],
+      beforeAfter:{ before:'• Managed the design team and improved the checkout',
+        after:'• Managed 8 designers across 3 product areas\n• Redesigned checkout, lifting conversion from 3.1% to 3.6% (+14%)' },
+      impact:'Recovers up to 3 Content points.',
+      pointsAvailable:3 });
+  } else {
+    categories.content.potential += 5;
+    addFinding({ id:'quantified', cat:'content', state:'fail', priority:'fix',
+      title:'Almost no quantified results',
+      summary:'A CV without numbers reads as a list of responsibilities, not a record of achievement.',
+      evidence: quantEvidence,
+      steps:[
+        'For each role, write down what changed because you were there. Attach a number.',
+        'Common patterns: "Grew X from A to B", "Reduced X by Y%", "Managed a team of N".',
+        'Scope counts: how many people, products, sites, clients, countries, systems.',
+        'If the exact figure is confidential, use a rounded percentage.',
+        'Aim for one metric in at least half your bullets.'
+      ],
+      beforeAfter:{ before:'• Responsible for the sales pipeline and customer retention',
+        after:'• Built a pipeline of 240 qualified leads per quarter (up from 80)\n• Reduced customer churn from 8.4% to 5.1% year-on-year' },
+      impact:'Recovers 5 of 20 Content points. Highest-impact single fix in Content.',
+      pointsAvailable:5 });
+  }
+
+  if (wordCount >= 400 && wordCount <= 900){
+    categories.content.score += 5;
+    addFinding({ id:'length', cat:'content', state:'pass',
+      title:'Length is ideal (' + wordCount + ' words)',
+      summary:'For a one- to two-page CV, 400 to 900 words is the expected range.' });
+  } else if (wordCount > 900 && wordCount <= 1200){
+    categories.content.score += 3;
+    categories.content.potential += 2;
+    addFinding({ id:'length', cat:'content', state:'warn', priority:'recommend',
+      title:'CV is long (' + wordCount + ' words)',
+      summary:'This may run to three pages. Some ATS systems penalise length.',
+      evidence:['Total: ' + wordCount + ' words. Target: 400–900.'],
+      steps:[
+        'Trim older roles to one or two bullets each.',
+        'Keep the last ten years in detail; summarise earlier in one line.',
+        'Cut any bullet without a specific action, result, or scope.'
+      ],
+      impact:'Recovers up to 2 Content points.',
+      pointsAvailable:2 });
+  } else if (wordCount > 1200){
+    categories.content.potential += 5;
+    addFinding({ id:'length', cat:'content', state:'fail', priority:'fix',
+      title:'CV is too long (' + wordCount + ' words)',
+      summary:'Most recruiters will not read past two pages.',
+      evidence:['Total: ' + wordCount + ' words — above the 400–900 ideal.'],
+      steps:[
+        'Cut to two pages maximum.',
+        'Keep the last 10 years in detail. Compress anything earlier into one line per role.',
+        'Remove roles that do not support the job you are applying for.'
+      ],
+      impact:'Recovers 5 of 20 Content points.',
+      pointsAvailable:5 });
+  } else if (wordCount >= 200){
+    categories.content.score += 3;
+    categories.content.potential += 2;
+    addFinding({ id:'length', cat:'content', state:'warn', priority:'recommend',
+      title:'CV is short (' + wordCount + ' words)',
+      summary:'Under 400 words rarely fills a page.',
+      evidence:['Total: ' + wordCount + ' words. Target: 400–900.'],
+      steps:[
+        'Add two to three more bullets to each role.',
+        'Describe the scope, not just the tasks — team size, budget, geography.',
+        'Add a summary at the top and a skills section.'
+      ],
+      impact:'Recovers up to 2 Content points.',
+      pointsAvailable:2 });
+  } else {
+    categories.content.potential += 5;
+    addFinding({ id:'length', cat:'content', state:'fail', priority:'fix',
+      title:'CV is very short (' + wordCount + ' words)',
+      summary:'Not enough content for a full CV or for a parser to extract sections.',
+      evidence:['Total: ' + wordCount + ' words.'],
+      steps:[
+        'Expand every role to at least three bullets.',
+        'Add a professional summary.',
+        'Add a skills section.',
+        'Aim for 400–900 words total.'
+      ],
+      impact:'Recovers 5 of 20 Content points.',
+      pointsAvailable:5 });
+  }
+
+  /* LANGUAGE */
+  var pronounMatches = text.match(/\b(?:I|me|my|mine|myself|we|our|ours|ourselves)\b/gi) || [];
+  if (pronounMatches.length === 0){
+    categories.language.score += 5;
+    addFinding({ id:'pronouns', cat:'language', state:'pass',
+      title:'No first-person pronouns',
+      summary:'CVs are written in the implied third person.' });
+  } else if (pronounMatches.length <= 2){
+    categories.language.score += 3;
+    categories.language.potential += 2;
+    addFinding({ id:'pronouns', cat:'language', state:'info', priority:'optional',
+      title:pronounMatches.length + ' first-person pronoun' + (pronounMatches.length === 1 ? '' : 's') + ' found',
+      summary:'CVs are conventionally written without them.',
+      evidence:['Found: ' + pronounMatches.join(', ')],
+      steps:[
+        'Search the document for "I ", "me", "my", "we", "our".',
+        'Rewrite each sentence without the pronoun.',
+        '"I managed a team" becomes "Managed a team".'
+      ],
+      impact:'Recovers up to 2 Language points.',
+      pointsAvailable:2 });
+  } else {
+    categories.language.potential += 5;
+    addFinding({ id:'pronouns', cat:'language', state:'warn', priority:'recommend',
+      title:pronounMatches.length + ' first-person pronouns found',
+      summary:'Regular use of "I" or "we" reads as a cover letter pasted into the wrong document.',
+      evidence:['Found ' + pronounMatches.length + ' pronouns including: ' + pronounMatches.slice(0, 8).join(', ')],
+      steps:[
+        'Search the document for "I", "me", "my", "we", "our".',
+        'Rewrite every sentence without the pronoun.',
+        '"I led the redesign" becomes "Led the redesign".'
+      ],
+      beforeAfter:{ before:'I led the redesign of the checkout flow and I improved conversion by 14%.',
+        after:'Led redesign of the checkout flow, lifting conversion by 14%.' },
+      impact:'Recovers 5 of 15 Language points.',
+      pointsAvailable:5 });
+  }
+
+  var clicheHits = [];
+  CLICHES.forEach(function(c){
+    if (lowerText.indexOf(c) > -1) clicheHits.push(c);
+  });
+  if (clicheHits.length === 0){
+    categories.language.score += 5;
+    addFinding({ id:'cliches', cat:'language', state:'pass',
+      title:'No common clichés detected',
+      summary:'The CV avoids the overused phrases recruiters skim past.' });
+  } else if (clicheHits.length <= 2){
+    categories.language.score += 3;
+    categories.language.potential += 2;
+    addFinding({ id:'cliches', cat:'language', state:'info', priority:'optional',
+      title:clicheHits.length + ' cliché' + (clicheHits.length === 1 ? '' : 's') + ' detected',
+      summary:'Words that add length without adding meaning.',
+      evidence: clicheHits.map(function(c){ return '"' + c + '"'; }),
+      steps:[
+        'Delete each cliché and replace with a specific example.',
+        '"Team player" becomes "Partnered with three departments on the rebrand".',
+        '"Detail-oriented" becomes "Audited 400 records monthly with zero errors".'
+      ],
+      impact:'Recovers up to 2 Language points.',
+      pointsAvailable:2 });
+  } else {
+    categories.language.potential += 5;
+    addFinding({ id:'cliches', cat:'language', state:'fail', priority:'fix',
+      title:clicheHits.length + ' clichés detected',
+      summary:'These phrases make a CV sound like every other CV.',
+      evidence: clicheHits.slice(0, 10).map(function(c){ return '"' + c + '"'; }),
+      steps:[
+        'Delete every cliché.',
+        'For each one, replace with a specific, provable example.',
+        'Better to say less and mean it than to say more and mean nothing.'
+      ],
+      beforeAfter:{ before:'Hard-working team player with excellent communication skills and a strong work ethic.',
+        after:'Shipped 12 features in 6 months across three product teams, coordinating 8 stakeholders per launch.' },
+      impact:'Recovers 5 of 15 Language points.',
+      pointsAvailable:5 });
+  }
+
+  var passiveMatches = text.match(/\b(?:was|were|been|being|is|are)\s+\w+(?:ed|en)\b/gi) || [];
+  if (passiveMatches.length <= 1){
+    categories.language.score += 5;
+  } else if (passiveMatches.length <= 4){
+    categories.language.score += 3;
+    categories.language.potential += 2;
+    addFinding({ id:'passive', cat:'language', state:'info', priority:'optional',
+      title:passiveMatches.length + ' possible passive construction' + (passiveMatches.length === 1 ? '' : 's'),
+      summary:'Passive voice hides who did what.',
+      evidence: passiveMatches.slice(0, 5),
+      steps:[
+        'Rewrite each in the active voice.',
+        '"Reports were written by me" becomes "Wrote weekly reports".',
+        '"The project was led by the team" becomes "Led the project".'
+      ],
+      impact:'Recovers up to 2 Language points.',
+      pointsAvailable:2 });
+  } else {
+    categories.language.potential += 5;
+    addFinding({ id:'passive', cat:'language', state:'warn', priority:'recommend',
+      title:passiveMatches.length + ' passive constructions detected',
+      summary:'Frequent passive voice reads as a job description rather than a record of what you did.',
+      evidence: passiveMatches.slice(0, 8),
+      steps:[
+        'Rewrite each in the active voice.',
+        'The subject should be doing the verb, not receiving it.',
+        '"Budget was managed" becomes "Managed a £180k budget".'
+      ],
+      beforeAfter:{ before:'The new process was designed and was implemented across the department.',
+        after:'Designed and implemented a new process across the department.' },
+      impact:'Recovers 5 of 15 Language points.',
+      pointsAvailable:5 });
+  }
+
+  /* KEYWORDS */
+  var keywordResults = null;
+
+  if (jd && jd.trim().length > 50){
+    keywordResults = matchKeywords(text, jd);
+    var rate = keywordResults.matchRate;
+
+    if (rate >= 0.6){
+      categories.keywords.score += 15;
+      addFinding({ id:'keywords', cat:'keywords', state:'pass',
+        title:'Strong keyword match (' + Math.round(rate*100) + '%)',
+        summary:keywordResults.matched.length + ' of ' + keywordResults.total + ' key terms found.' });
+    } else if (rate >= 0.4){
+      categories.keywords.potential += 5;
+      addFinding({ id:'keywords', cat:'keywords', state:'warn', priority:'recommend',
+        title:'Moderate keyword match (' + Math.round(rate*100) + '%)',
+        summary:keywordResults.matched.length + ' of ' + keywordResults.total + ' key terms matched.',
+        evidence:['Missing terms are listed in the Keyword match section below.'],
+        steps:[
+          'Review the missing keywords below.',
+          'Add any that genuinely describe your experience.',
+          'Use the exact phrasing from the job advert. ATS matching is literal.'
+        ],
+        impact:'Recovers up to 5 Keyword points.',
+        pointsAvailable:5 });
+    } else if (rate >= 0.2){
+      categories.keywords.potential += 10;
+      addFinding({ id:'keywords', cat:'keywords', state:'warn', priority:'fix',
+        title:'Weak keyword match (' + Math.round(rate*100) + '%)',
+        summary:'This CV may be filtered out before human review.',
+        evidence:['Only ' + Math.round(rate*100) + '% of the job advert\'s key terms appear in your CV.'],
+        steps:[
+          'Review the missing keywords list below.',
+          'Add the top 10 most important terms to your skills section using the exact wording.',
+          'Work the remaining terms naturally into your role bullets.',
+          'Only add terms you can back up at interview.'
+        ],
+        impact:'Recovers up to 10 Keyword points.',
+        pointsAvailable:10 });
+    } else {
+      categories.keywords.potential += 15;
+      addFinding({ id:'keywords', cat:'keywords', state:'fail', priority:'fix',
+        title:'Very low keyword match (' + Math.round(rate*100) + '%)',
+        summary:'Under 20% of the key terms appear in your CV. Most ATS systems rank by this score.',
+        evidence:['Only ' + keywordResults.matched.length + ' of ' + keywordResults.total + ' key terms matched.'],
+        steps:[
+          'Check whether this CV is genuinely a fit for the role.',
+          'If it is, the CV is written for a different role and needs rewriting for this one.',
+          'Pull the top 15 terms from the missing list and work them into a rewritten summary and skills section.',
+          'Only use terms you can defend in an interview.'
+        ],
+        impact:'Recovers up to 15 Keyword points.',
+        pointsAvailable:15 });
+    }
+  } else {
+    addFinding({ id:'keywords', cat:'keywords', state:'info', priority:'optional',
+      title:'No job description provided',
+      summary:'Keyword matching requires a job advert to compare against.',
+      steps:[
+        'Paste the full job advert into the "Job description" box.',
+        'Include the whole advert: title, responsibilities, essential skills.',
+        'Re-run the analysis — this unlocks 15 additional points.'
+      ] });
+  }
+
+  /* TOTAL */
+  var totalScore = 0;
+  var maxScore = 0;
+  var potentialGain = 0;
+  Object.keys(categories).forEach(function(k){
+    totalScore += categories[k].score;
+    maxScore += categories[k].max;
+    potentialGain += categories[k].potential;
+  });
+  var normalised = Math.round((totalScore / maxScore) * 100);
+  var potentialFinal = Math.min(100, Math.round(((totalScore + potentialGain) / maxScore) * 100));
+
+  var order = { fail:0, warn:1, info:2, pass:3 };
+  findings.sort(function(a, b){
+    if (order[a.state] !== order[b.state]) return order[a.state] - order[b.state];
+    return (b.pointsAvailable || 0) - (a.pointsAvailable || 0);
+  });
+
+  return {
+    categories: categories,
+    findings: findings,
+    score: normalised,
+    rawScore: totalScore,
+    maxScore: maxScore,
+    potentialGain: potentialGain,
+    potentialFinal: potentialFinal,
+    keywordResults: keywordResults
+  };
+}
+
+/* =========================================================
+   Keyword matching
+   ========================================================= */
+function matchKeywords(cv, jd){
+  var cvLower = cv.toLowerCase();
+  var jdLower = jd.toLowerCase();
+
+  var jdTokens = jdLower.match(/\b[a-z][a-z0-9+#.-]{2,}\b/g) || [];
+  var bigrams = [];
+
+  for (var i = 0; i < jdTokens.length - 1; i++){
+    var a = jdTokens[i], b = jdTokens[i+1];
+    if (STOPWORDS.indexOf(a) === -1 && STOPWORDS.indexOf(b) === -1 &&
+        a.length >= 3 && b.length >= 3){
+      bigrams.push(a + ' ' + b);
+    }
+  }
+
+  var singleCounts = {};
+  jdTokens.forEach(function(t){
+    if (STOPWORDS.indexOf(t) > -1 || t.length < 3) return;
+    singleCounts[t] = (singleCounts[t] || 0) + 1;
+  });
+
+  var bigramCounts = {};
+  bigrams.forEach(function(b){
+    bigramCounts[b] = (bigramCounts[b] || 0) + 1;
+  });
+
+  var singleTerms = Object.keys(singleCounts)
+    .filter(function(w){ return singleCounts[w] >= 2 || w.length >= 6; })
+    .sort(function(a, b){ return singleCounts[b] - singleCounts[a]; })
+    .slice(0, 60);
+
+  var bigramTerms = Object.keys(bigramCounts)
+    .filter(function(b){ return bigramCounts[b] >= 2; })
+    .sort(function(a, b){ return bigramCounts[b] - bigramCounts[a]; })
+    .slice(0, 25);
+
+  var allTerms = bigramTerms.concat(singleTerms);
+  var matched = [];
+  var missing = [];
+
+  allTerms.forEach(function(term){
+    var escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var re = new RegExp('\\b' + escaped + '\\b', 'i');
+    if (re.test(cvLower)) matched.push(term);
+    else missing.push(term);
+  });
+
+  var total = allTerms.length;
+  var matchRate = total ? matched.length / total : 0;
+
+  return {
+    matched: matched.slice(0, 40),
+    missing: missing.slice(0, 40),
+    total: total,
+    matchRate: matchRate,
+    matchedCount: matched.length
+  };
+}
+
+/* =========================================================
+   Rendering
+   ========================================================= */
+function renderResults(report){
+  var offset = 490 * (1 - report.score / 100);
+
+  var ringColour = '#059669';
+  var gradeClass = 'pass';
+  var gradeText = 'ATS-ready';
+  var headline = 'Your CV is likely to pass ATS screening.';
+  var verdict = 'Keep the structure intact. Focus on the refinements below.';
+
+  if (report.score < 50){
+    ringColour = '#b91c1c';
+    gradeClass = 'fail';
+    gradeText = 'High risk';
+    headline = 'Your CV is likely to be filtered out.';
+    verdict = 'Address the failing items first — starting with the "Start here" list above.';
+  } else if (report.score < 70){
+    ringColour = '#b45309';
+    gradeClass = 'warn';
+    gradeText = 'Needs work';
+    headline = 'Your CV has real weaknesses.';
+    verdict = 'Work through the "Start here" list first.';
+  } else if (report.score < 85){
+    ringColour = '#2d5a8c';
+    gradeClass = 'warn';
+    gradeText = 'Good';
+    headline = 'Your CV is in decent shape.';
+    verdict = 'No major structural issues. The refinements below are what most candidates skip.';
+  }
+
+  $('scoreNum').textContent = report.score;
+  var progress = $('scoreProgress');
+  progress.setAttribute('stroke', ringColour);
+  progress.style.strokeDashoffset = offset;
+
+  var grade = $('scoreGrade');
+  grade.className = 'grade ' + gradeClass;
+  grade.textContent = gradeText;
+
+  $('scoreHeadline').textContent = headline;
+  $('scoreSummary').innerHTML =
+    '<strong>' + report.rawScore + ' of ' + report.maxScore + ' points</strong> across six categories. ' +
+    (report.potentialGain > 0
+      ? 'Fixing everything below could lift you to <strong>' + report.potentialFinal + '/100</strong>.'
+      : '');
+  $('scoreVerdict').textContent = verdict;
+
+  /* Action plan */
+  var fixes = report.findings.filter(function(f){
+    return f.state === 'fail' || (f.state === 'warn' && f.pointsAvailable >= 3);
+  }).sort(function(a, b){
+    return (b.pointsAvailable || 0) - (a.pointsAvailable || 0);
+  }).slice(0, 5);
+
+  if (fixes.length > 0){
+    $('actionPlan').style.display = 'block';
+    $('actionPlanSub').textContent = 'Do these ' + fixes.length + ' in order — biggest score gains first';
+
+    $('actionList').innerHTML = fixes.map(function(f){
+      var firstStep = f.steps && f.steps[0] ? f.steps[0].replace(/<[^>]+>/g, '') : (f.summary || '');
+      return '<li class="action-item"><div class="body">' +
+        '<p class="title">' + esc(f.title) + '</p>' +
+        '<p class="what">' + esc(firstStep) + '</p>' +
+        (f.pointsAvailable ? '<span class="gain">+' + f.pointsAvailable + ' points</span>' : '') +
+      '</div></li>';
+    }).join('');
+  } else {
+    $('actionPlan').style.display = 'none';
+  }
+
+  /* Categories */
+  var catHTML = '';
+  Object.keys(report.categories).forEach(function(k){
+    var c = report.categories[k];
+    var pct = c.max ? (c.score / c.max) * 100 : 0;
+    var potentialText = c.potential > 0
+      ? 'Up to <b>+' + c.potential + '</b> points available'
+      : '<b>Fully scored</b>';
+
+    catHTML += '<div class="cat" style="--c:' + c.colour + ';">';
+    catHTML += '<div class="top"><span class="name">' + esc(c.name) + '</span>';
+    catHTML += '<span class="num">' + c.score + '/' + c.max + '</span></div>';
+    catHTML += '<div class="bar"><i style="width:' + pct + '%"></i></div>';
+    catHTML += '<div class="potential">' + potentialText + '</div>';
+    catHTML += '</div>';
+  });
+  $('catsGrid').innerHTML = catHTML;
+
+  /* Findings count */
+  var counts = { fail:0, warn:0, info:0, pass:0 };
+  report.findings.forEach(function(f){ counts[f.state]++; });
+
+  $('findingsCount').textContent =
+    counts.fail + ' to fix · ' + counts.warn + ' to review · ' + counts.pass + ' passed';
+
+  /* Findings */
+  var markChar = { fail:'!', warn:'!', info:'i', pass:'\u2713' };
+
+  var findingsHTML = report.findings.map(function(f){
+    var badge;
+    if (f.state === 'pass'){
+      badge = '<span class="badge pass">Passed</span>';
+    } else if (f.priority === 'fix'){
+      badge = '<span class="badge fix">Fix first</span>';
+    } else if (f.priority === 'recommend'){
+      badge = '<span class="badge recommend">Recommended</span>';
+    } else {
+      badge = '<span class="badge optional">Optional</span>';
+    }
+
+    var bodyHTML = '';
+
+    if (f.evidence && f.evidence.length){
+      bodyHTML += '<div class="fb-section"><h4>What we found</h4><div class="evidence">';
+      bodyHTML += f.evidence.map(function(e){
+        return '<span class="line">' + esc(e) + '</span>';
+      }).join('');
+      bodyHTML += '</div></div>';
+    }
+
+    if (f.steps && f.steps.length){
+      bodyHTML += '<div class="fb-section"><h4>How to fix it — step by step</h4><ol class="how-steps">';
+      bodyHTML += f.steps.map(function(s){ return '<li>' + s + '</li>'; }).join('');
+      bodyHTML += '</ol></div>';
+    }
+
+    if (f.beforeAfter){
+      bodyHTML += '<div class="fb-section"><h4>Before and after</h4><div class="ba-grid">';
+      bodyHTML += '<div class="ba-box before"><span class="ba-label">Before</span><p>' + esc(f.beforeAfter.before) + '</p></div>';
+      bodyHTML += '<div class="ba-box after"><span class="ba-label">After</span><p>' + esc(f.beforeAfter.after) + '</p></div>';
+      bodyHTML += '</div></div>';
+    }
+
+    if (f.impact){
+      bodyHTML += '<div class="fb-section"><div class="impact"><strong>Impact: </strong>' + esc(f.impact) + '</div></div>';
+    }
+
+    if (!bodyHTML){
+      bodyHTML = '<div class="fb-section"><div class="impact">No further action needed — this check passed.</div></div>';
+    }
+
+    return '<div class="finding ' + f.state + '">' +
+      '<div class="finding-head" data-toggle-finding>' +
+        '<span class="mark">' + markChar[f.state] + '</span>' +
+        '<div class="head-body">' +
+          '<div class="title-row"><p class="title">' + esc(f.title) + '</p>' + badge + '</div>' +
+          (f.summary ? '<p class="summary">' + esc(f.summary) + '</p>' : '') +
+        '</div>' +
+        '<span class="caret">▾</span>' +
+      '</div>' +
+      '<div class="finding-body">' + bodyHTML + '</div>' +
+    '</div>';
+  }).join('');
+
+  $('findingsList').innerHTML = findingsHTML;
+
+  /* Keywords */
+  if (report.keywordResults){
+    var k = report.keywordResults;
+    $('keywordsSection').style.display = 'block';
+    $('kwSummary').textContent =
+      k.matchedCount + ' of ' + k.total + ' key terms matched (' + Math.round(k.matchRate*100) + '%)';
+
+    $('kwMatched').innerHTML = k.matched.length
+      ? k.matched.map(function(t){ return '<span class="kw-chip matched">' + esc(t) + '</span>'; }).join('')
+      : '<span style="font-size:12.5px;color:#8b95a3;font-style:italic;">None detected</span>';
+
+    $('kwMissing').innerHTML = k.missing.length
+      ? k.missing.map(function(t){ return '<span class="kw-chip missing">' + esc(t) + '</span>'; }).join('')
+      : '<span style="font-size:12.5px;color:#8b95a3;font-style:italic;">Excellent coverage</span>';
+  } else {
+    $('keywordsSection').style.display = 'none';
+  }
+
+  $('placeholder').style.display = 'none';
+  $('results').classList.add('show');
+  $('downloadReportBtn').disabled = false;
+
+  var firstFail = document.querySelector('.finding.fail .finding-head');
+  if (firstFail) firstFail.parentNode.classList.add('open');
+
+  window.__lastReport = report;
+}
+
+/* =========================================================
+   Report download
+   ========================================================= */
+function buildReportHTML(report){
+  var date = new Date().toLocaleDateString('en-GB', {
+    day:'numeric', month:'long', year:'numeric'
+  });
+
+  var gradeColour = report.score >= 85 ? '#059669'
+                  : report.score >= 70 ? '#2d5a8c'
+                  : report.score >= 50 ? '#b45309' : '#b91c1c';
+
+  var markChar = { fail:'!', warn:'!', info:'i', pass:'\u2713' };
+
+  var catHTML = '';
+  Object.keys(report.categories).forEach(function(k){
+    var c = report.categories[k];
+    var pct = c.max ? (c.score / c.max) * 100 : 0;
+    catHTML += '<div class="cat"><div class="top"><span class="name">' + esc(c.name) + '</span>';
+    catHTML += '<span class="num">' + c.score + '/' + c.max + '</span></div>';
+    catHTML += '<div class="bar"><i style="width:' + pct + '%;background:' + c.colour + ';"></i></div></div>';
+  });
+
+  var findingsHTML = report.findings.map(function(f){
+    var html = '<div class="finding ' + f.state + '">';
+    html += '<div class="fh"><span class="mark">' + markChar[f.state] + '</span>';
+    html += '<strong>' + esc(f.title) + '</strong></div>';
+
+    if (f.evidence && f.evidence.length){
+      html += '<p class="lbl">What we found</p><div class="ev">';
+      html += f.evidence.map(function(e){ return '<div>' + esc(e) + '</div>'; }).join('');
+      html += '</div>';
+    }
+
+    if (f.steps && f.steps.length){
+      html += '<p class="lbl">How to fix it</p><ol class="st">';
+      html += f.steps.map(function(s){ return '<li>' + s + '</li>'; }).join('');
+      html += '</ol>';
+    }
+
+    if (f.beforeAfter){
+      html += '<p class="lbl">Before and after</p><div class="ba">';
+      html += '<div class="before"><b>Before</b>' + esc(f.beforeAfter.before) + '</div>';
+      html += '<div class="after"><b>After</b>' + esc(f.beforeAfter.after) + '</div>';
+      html += '</div>';
+    }
+
+    if (f.impact){
+      html += '<p class="im"><strong>Impact: </strong>' + esc(f.impact) + '</p>';
+    }
+
+    html += '</div>';
+    return html;
+  }).join('');
+
+  var keywordsHTML = '';
+  if (report.keywordResults){
+    var k = report.keywordResults;
+    keywordsHTML = '<h2>Keyword match - ' + Math.round(k.matchRate*100) + '%</h2><div class="kwg">';
+    keywordsHTML += '<div><b>Matched</b><div class="kwc">' + k.matched.map(function(t){ return '<span class="chip ok">' + esc(t) + '</span>'; }).join('') + '</div></div>';
+    keywordsHTML += '<div><b>Missing</b><div class="kwc">' + k.missing.map(function(t){ return '<span class="chip no">' + esc(t) + '</span>'; }).join('') + '</div></div>';
+    keywordsHTML += '</div>';
+  }
+
+  var style = 'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:13.5px;line-height:1.6;color:#0f1a2b;max-width:820px;margin:0 auto;padding:32px 26px;background:#fff;}';
+  style += 'h1{font-family:Georgia,serif;font-size:24px;margin:0 0 4px;}';
+  style += 'h2{font-family:Georgia,serif;font-size:18px;margin:26px 0 12px;}';
+  style += '.meta{color:#8b95a3;font-size:12px;margin-bottom:22px;}';
+  style += '.hero{background:#f5f6f8;border-radius:12px;padding:20px 24px;margin-bottom:20px;display:flex;gap:24px;align-items:center;}';
+  style += '.score{font-size:48px;font-weight:800;letter-spacing:-.03em;line-height:1;color:' + gradeColour + ';}';
+  style += '.score small{font-size:12px;color:#8b95a3;font-weight:600;display:block;margin-top:6px;text-transform:uppercase;}';
+  style += '.cats{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;margin-bottom:18px;}';
+  style += '.cat .top{display:flex;justify-content:space-between;margin-bottom:4px;font-size:12.5px;}';
+  style += '.cat .name{font-weight:600;}';
+  style += '.cat .num{font-family:ui-monospace,monospace;font-weight:700;color:#4a5462;}';
+  style += '.cat .bar{height:5px;border-radius:999px;background:#eef1f4;overflow:hidden;}';
+  style += '.cat .bar > i{display:block;height:100%;border-radius:999px;}';
+  style += '.finding{border-left:4px solid #ccd2db;padding:14px 18px;margin-bottom:12px;border-radius:0 8px 8px 0;background:#fafbfc;}';
+  style += '.finding.pass{border-color:#059669;}';
+  style += '.finding.warn{border-color:#b45309;}';
+  style += '.finding.fail{border-color:#b91c1c;}';
+  style += '.finding.info{border-color:#2d5a8c;}';
+  style += '.finding .fh{margin-bottom:8px;}';
+  style += '.finding .mark{display:inline-block;width:20px;height:20px;border-radius:50%;background:#ccd2db;color:#fff;text-align:center;line-height:20px;font-size:12px;font-weight:800;margin-right:8px;}';
+  style += '.finding.pass .mark{background:#059669;}';
+  style += '.finding.warn .mark{background:#b45309;}';
+  style += '.finding.fail .mark{background:#b91c1c;}';
+  style += '.finding.info .mark{background:#2d5a8c;}';
+  style += '.lbl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#8b95a3;margin:12px 0 6px;}';
+  style += '.ev{background:#fff;border-left:3px solid #ccd2db;border-radius:0 6px 6px 0;padding:8px 12px;font-family:ui-monospace,monospace;font-size:12px;line-height:1.6;}';
+  style += '.st{margin:0;padding-left:22px;font-size:12.5px;line-height:1.7;}';
+  style += '.st li{margin-bottom:4px;}';
+  style += '.ba{display:grid;grid-template-columns:1fr 1fr;gap:10px;}';
+  style += '.ba > div{padding:10px 12px;border-radius:8px;font-size:12px;line-height:1.55;white-space:pre-wrap;}';
+  style += '.ba > div > b{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px;}';
+  style += '.ba .before{background:#fdf3f3;}';
+  style += '.ba .before > b{color:#b91c1c;}';
+  style += '.ba .after{background:#ecfdf5;}';
+  style += '.ba .after > b{color:#059669;}';
+  style += '.im{margin:12px 0 0;padding:9px 12px;background:#eff6ff;border-radius:8px;font-size:12.5px;}';
+  style += '.im strong{color:#1e40af;}';
+  style += 'code{font-family:ui-monospace,monospace;font-size:11.5px;background:#eef1f4;padding:1px 5px;border-radius:4px;}';
+  style += '.kwg{display:grid;grid-template-columns:1fr 1fr;gap:14px;}';
+  style += '.kwg > div > b{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8b95a3;display:block;margin-bottom:8px;}';
+  style += '.kwc{display:flex;flex-wrap:wrap;gap:5px;}';
+  style += '.chip{font-size:11px;padding:3px 8px;border-radius:999px;font-family:ui-monospace,monospace;}';
+  style += '.chip.ok{background:#e6f7f0;color:#059669;}';
+  style += '.chip.no{background:#fbeaea;color:#b91c1c;}';
+
+  return '<!DOCTYPE html>\n<html><head><meta charset="UTF-8"><title>ATS CV Report</title><style>' + style + '</style></head><body>' +
+    '<h1>ATS CV Report</h1>' +
+    '<p class="meta">Generated ' + esc(date) + '</p>' +
+    '<div class="hero">' +
+    '<div class="score">' + report.score + '<small>out of 100</small></div>' +
+    '<div><p style="margin:0;"><strong>' + report.rawScore + ' of ' + report.maxScore + ' points</strong> across six categories.</p>' +
+    (report.potentialGain > 0 ? '<p style="margin:6px 0 0;color:#059669;font-weight:600;">Fixing everything below could lift you to ' + report.potentialFinal + '/100.</p>' : '') +
+    '</div></div>' +
+    '<h2>Category breakdown</h2>' +
+    '<div class="cats">' + catHTML + '</div>' +
+    '<h2>Findings</h2>' +
+    findingsHTML +
+    keywordsHTML +
+    '<p style="margin-top:32px;padding-top:16px;border-top:1px solid #e2e6ec;font-size:11.5px;color:#8b95a3;text-align:center;">Generated by ATS CV Checker - free, offline, nothing uploaded.</p>' +
+    '</body></html>';
+}
+
+/* =========================================================
+   Toast, counters, chip
+   ========================================================= */
+var toastTimer = null;
+function toast(msg){
+  var el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ el.classList.remove('on'); }, 2400);
+}
+
+function updateCounter(){
+  var cv = document.getElementById('cvInput');
+  var jd = document.getElementById('jdInput');
+  if (!cv || !jd) return;
+
+  var cvText = cv.value || '';
+  var jdText = jd.value || '';
+
+  document.getElementById('cvCounter').textContent =
+    countWords(cvText) + ' words · ' + cvText.length + ' characters';
+  document.getElementById('jdCounter').textContent =
+    countWords(jdText) + ' words · ' + jdText.length + ' characters';
+}
+
+function showFileChip(name, chars, warning){
+  var chip = document.getElementById('fileChip');
+  if (!chip) return;
+  document.getElementById('fileChipName').textContent = name;
+  document.getElementById('fileChipMeta').textContent =
+    chars.toLocaleString() + ' characters';
+  chip.style.display = 'flex';
+  chip.classList.toggle('warn', !!warning);
+}
+
+function hideFileChip(){
+  var chip = document.getElementById('fileChip');
+  if (chip) chip.style.display = 'none';
+}
+
+/* =========================================================
+   File loading
+   ========================================================= */
+function setDropLoading(loading, message){
+  var drop = document.getElementById('cvDrop');
+  var title = document.getElementById('dropTitle');
+  var sub = document.getElementById('dropSub');
+  if (!drop) return;
+
+  if (loading){
+    drop.classList.add('loading');
+    if (title) title.textContent = message || 'Reading file…';
+    if (sub) sub.textContent = 'Extracting the text — this takes a second';
+  } else {
+    drop.classList.remove('loading');
+    if (title) title.textContent = 'Drop your CV here or click to browse';
+    if (sub) sub.textContent = 'Everything is processed in your browser — nothing is uploaded';
+  }
+}
+
+function handleCvFile(file){
+  if (!file) return;
+
+  if (file.size > 15 * 1024 * 1024){
+    toast('File too large (max 15MB)');
+    return;
+  }
+
+  setDropLoading(true, 'Reading ' + file.name + '…');
+  toast('Reading ' + file.name + '…');
+
+  readAnyFile(file).then(function(result){
+    var text = result.text || '';
+
+    /* Strip null bytes and BOM */
+    text = text.replace(/\u0000/g, '').replace(/^\uFEFF/, '');
+
+    /* Normalise line endings */
+    text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    /* Collapse excessive blank lines */
+    text = text.replace(/\n{3,}/g, '\n\n').trim();
+
+    if (text.length < 20){
+      throw new Error('No readable text found in this file.');
+    }
+
+    document.getElementById('cvInput').value = text;
+    updateCounter();
+    showFileChip(file.name, text.length, result.warn);
+
+    setDropLoading(false);
+    toast(
+      result.source === 'docx' ? 'Extracted ' + text.length.toLocaleString() + ' characters from ' + file.name
+      : result.source === 'doc'  ? 'Best-effort extraction — please skim the text below before analysing'
+      : 'Loaded ' + file.name
+    );
+
+    if (result.warn){
+      setTimeout(function(){
+        toast('Legacy .doc format — always check the extracted text');
+      }, 1500);
+    }
+  }).catch(function(err){
+    setDropLoading(false);
+    console.error('File read error:', err);
+    toast(err && err.message ? err.message : 'Could not read that file');
+  });
+}
+
+/* =========================================================
+   Run analysis
+   ========================================================= */
+function runAnalysis(){
+  var cv = (document.getElementById('cvInput').value || '').trim();
+  var jd = (document.getElementById('jdInput').value || '').trim();
+
+  if (!cv){
+    toast('Load or paste your CV first');
+    document.getElementById('cvInput').focus();
+    return;
+  }
+
+  var words = countWords(cv);
+  if (words < 30){
+    toast('That CV seems very short (' + words + ' words)');
+    return;
+  }
+
+  var btn = document.getElementById('analyzeBtn');
+  var originalText = btn.textContent;
+  btn.textContent = 'Analysing...';
+  btn.disabled = true;
+
+  document.getElementById('analyzeMsg').innerHTML = '<b>Analysing...</b> running checks.';
+
+  setTimeout(function(){
+    try {
+      var report = analyze(cv, jd);
+      renderResults(report);
+
+      var failCount = 0;
+      for (var i = 0; i < report.findings.length; i++){
+        if (report.findings[i].state === 'fail') failCount++;
+      }
+
+      document.getElementById('analyzeMsg').innerHTML =
+        '<b>Done.</b> ' + report.score + '/100. ' +
+        (failCount
+          ? failCount + ' issue' + (failCount === 1 ? '' : 's') + ' to fix, then up to ' + report.potentialFinal + '/100.'
+          : 'No critical issues.');
+    } catch(err){
+      console.error('Analysis error:', err);
+      toast('Analysis failed: ' + (err && err.message ? err.message : 'unknown'));
+      document.getElementById('analyzeMsg').textContent = 'Analysis failed. Check the browser console.';
+    }
+
+    btn.textContent = originalText;
+    btn.disabled = false;
+
+    setTimeout(function(){
+      var results = document.getElementById('results');
+      if (results && results.classList.contains('show')){
+        results.scrollIntoView({ behavior:'smooth', block:'start' });
+      }
+    }, 100);
+  }, 60);
+}
+
+/* =========================================================
+   Init
+   ========================================================= */
+function init(){
+  var cvInput = document.getElementById('cvInput');
+  var jdInput = document.getElementById('jdInput');
+  if (cvInput) cvInput.addEventListener('input', updateCounter);
+  if (jdInput) jdInput.addEventListener('input', updateCounter);
+
+  var cvFile = document.getElementById('cvFile');
+  if (cvFile){
+    cvFile.addEventListener('change', function(e){
+      var file = e.target.files && e.target.files[0];
+      if (file) handleCvFile(file);
+      e.target.value = '';
+    });
+  }
+
+  var drop = document.getElementById('cvDrop');
+  if (drop){
+    ['dragenter','dragover'].forEach(function(ev){
+      drop.addEventListener(ev, function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        drop.classList.add('over');
+      });
+    });
+    ['dragleave','drop'].forEach(function(ev){
+      drop.addEventListener(ev, function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        if (ev === 'drop' || !drop.contains(e.relatedTarget)){
+          drop.classList.remove('over');
+        }
+      });
+    });
+    drop.addEventListener('drop', function(e){
+      var file = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file) handleCvFile(file);
+    });
+  }
+
+  /* Prevent the whole page from being a drop zone by accident */
+  ['dragover','drop'].forEach(function(ev){
+    document.addEventListener(ev, function(e){
+      if (!e.target.closest || !e.target.closest('#cvDrop')){
+        e.preventDefault();
+      }
+    });
+  });
+
+  var fileChipClear = document.getElementById('fileChipClear');
+  if (fileChipClear){
+    fileChipClear.addEventListener('click', function(){
+      hideFileChip();
+      document.getElementById('cvInput').value = '';
+      updateCounter();
+      toast('Cleared');
+    });
+  }
+
+  var clearCv = document.getElementById('clearCvBtn');
+  if (clearCv) clearCv.addEventListener('click', function(){
+    document.getElementById('cvInput').value = '';
+    hideFileChip();
+    updateCounter();
+    toast('CV cleared');
+  });
+
+  var clearJd = document.getElementById('clearJdBtn');
+  if (clearJd) clearJd.addEventListener('click', function(){
+    document.getElementById('jdInput').value = '';
+    updateCounter();
+    toast('Job description cleared');
+  });
+
+  var analyzeBtn = document.getElementById('analyzeBtn');
+  if (analyzeBtn) analyzeBtn.addEventListener('click', runAnalysis);
+
+  var printBtn = document.getElementById('printBtn');
+  if (printBtn) printBtn.addEventListener('click', function(){ window.print(); });
+
+  var dlBtn = document.getElementById('downloadReportBtn');
+  if (dlBtn){
+    dlBtn.addEventListener('click', function(){
+      var report = window.__lastReport;
+      if (!report){ toast('Run an analysis first'); return; }
+      var html = buildReportHTML(report);
+      var blob = new Blob([html], { type:'text/html' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'ats-cv-report-' + new Date().toISOString().slice(0,10) + '.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast('Report downloaded');
+    });
+  }
+
+  var saveBtn = document.getElementById('saveToolBtn');
+  if (saveBtn){
+    saveBtn.addEventListener('click', function(){
+      var html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      var blob = new Blob([html], { type:'text/html' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'ats-cv-checker.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast('Tool saved');
+    });
+  }
+
+  /* Toggle finding open/closed */
+  document.addEventListener('click', function(e){
+    var head = e.target.closest('[data-toggle-finding]');
+    if (head){
+      var card = head.parentNode;
+      if (card) card.classList.toggle('open');
+    }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter'){
+      e.preventDefault();
+      runAnalysis();
+    }
+  });
+
+  updateCounter();
+}
+
+if (document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
+
+})();
+</script>
+</body>
+</html>
